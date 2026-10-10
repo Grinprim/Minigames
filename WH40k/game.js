@@ -1,5 +1,6 @@
-// Host-authoritative auction over PeerJS (WebRTC). The host's browser owns the state
-// and broadcasts it after every change; other players only send intents (join/bid/pass).
+// Host-authoritative auction over PeerJS (WebRTC), with a public MQTT relay as fallback.
+// The host's browser owns the state and broadcasts it after every change; other players
+// only send intents (join/bid/pass).
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const U = Object.fromEntries(UNITS.map(u => [u.id, u]));
@@ -26,7 +27,13 @@ function trace(c, who) {
   return types;
 }
 
-let peer, isHost = false, me = null, S = null, hostConn = null, offset = 0;
+// Fallback for players whose network blocks the direct link: messages go through a free
+// public MQTT broker (no account needed). Relay players get a pseudo-connection in `conns`.
+// ponytail: anyone who knows the code can read the game or forge a player id on the broker; fine for friends.
+const BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+const TOPIC = 'mgwh/';
+
+let peer, relay = null, isHost = false, me = null, S = null, hostConn = null, offset = 0;
 const conns = new Map();
 
 // ---------- faction helpers ----------
@@ -52,6 +59,7 @@ function show(id) { document.querySelectorAll('.screen').forEach(e => { e.hidden
 function fail(text) {
   show('home'); $('#where').textContent = '';
   $('#homeMsg').textContent = text;
+  if (relay) { if (isHost && S) relay.publish(`${TOPIC}${S.code}/closed`, '1'); relay.end(); relay = null; }
   peer?.destroy(); peer = null; S = null; isHost = false;
 }
 
@@ -120,6 +128,7 @@ function hostSession(name, settings) {
     // The host runs the auction and never bids, so they are not in players.
     S = { code, phase: 'lobby', settings, hostName: name, players: [] };
     broadcast();
+    hostRelay(code);
   });
   peer.on('connection', c => {
     netLog('player connecting:', c.peer);
@@ -132,6 +141,25 @@ function hostSession(name, settings) {
     netLog('host error:', e.type, e.message);
     if (e.type === 'unavailable-id') { peer.destroy(); hostSession(name, settings); }
     else if (e.type !== 'peer-unavailable') fail(`Connection problem: ${e.message}`);
+  });
+}
+
+function hostRelay(code) {
+  if (typeof mqtt === 'undefined') return netLog('relay library failed to load; relay players cannot join');
+  const t = TOPIC + code;
+  const c = relay = mqtt.connect(BROKER, { will: { topic: `${t}/closed`, payload: '1' } });
+  c.on('connect', () => { netLog('relay ready'); c.subscribe(`${t}/host`); });
+  c.on('error', e => netLog('relay error:', e.message));
+  c.on('message', (_, buf) => {
+    let from, m;
+    try { ({ from, m } = JSON.parse(buf)); } catch { return; }
+    if (typeof from !== 'string' || !/^[\w-]{1,64}$/.test(from) || from === me || !m) return;
+    if (m.t === 'bye') return leave(from);
+    if (!conns.has(from)) {
+      netLog('relay player connecting:', from);
+      conns.set(from, { open: true, send: x => c.publish(`${t}/p/${from}`, JSON.stringify(x)) });
+    }
+    handle(from, m);
   });
 }
 
@@ -268,34 +296,62 @@ function joinSession(name, code) {
   netLog('joining', code);
   if (typeof Peer === 'undefined') return fail('Could not load the connection library from unpkg.com. Turn off ad blockers for this site or try another network.');
   const p = peer = new Peer(PEER_OPTS);
-  let conn = null, types = new Set();
-  // A blocked link never errors, it just hangs (at the server or at the host), so give up visibly.
+  let conn = null, types = new Set(), relayed = false;
+  me = null;
+  const onData = m => {
+    if (m.t === 'refused') return fail(m.why);
+    if (m.t !== 'state') return;
+    S = m.s; offset = Date.now() - S.now;
+    render();
+  };
+  // A blocked direct link never errors, it just hangs, so after a few seconds switch to the relay.
   setTimeout(() => {
     if (peer !== p || conn?.open) return;
-    if (!conn) {
-      netLog('gave up after 15s: never reached the PeerJS server');
-      return fail('Could not reach the matchmaking server (0.peerjs.com). A firewall, VPN or ad blocker may be blocking it, so try another network.');
-    }
-    const ice = conn.peerConnection?.iceConnectionState ?? 'none';
-    netLog('gave up after 15s, ICE state:', ice, 'candidates:', [...types].join(',') || 'none');
-    fail(`Could not reach the host. One of you is likely on a strict network (mobile data, school/work wifi), so try another network. [ICE: ${ice}, candidates: ${[...types].join(',') || 'none'}]`);
-  }, 15000);
+    if (conn) netLog('direct link stuck, ICE state:', conn.peerConnection?.iceConnectionState ?? 'none', 'candidates:', [...types].join(',') || 'none');
+    else netLog('never reached the PeerJS server');
+    netLog('switching to relay');
+    relayed = true;
+    conn?.close();
+    joinRelay(name, code, onData);
+  }, 6000);
+  setTimeout(() => {
+    if (peer !== p || S) return;
+    netLog('gave up after 20s');
+    fail('Could not reach the host, directly or through the relay. Check the code and that the host still has the game open.');
+  }, 20000);
   peer.on('open', () => {
+    if (relayed) return;
     me = peer.id;
     netLog('signalling server ok, joining', code, TURN.length ? '(with TURN)' : '(no TURN configured)');
     hostConn = conn = peer.connect(PREFIX + code, { reliable: true });
     types = trace(hostConn, 'join');
     hostConn.on('open', () => { netLog('connected to host'); hostConn.send({ t: 'join', name }); });
-    hostConn.on('data', m => {
-      if (m.t === 'refused') return fail(m.why);
-      if (m.t !== 'state') return;
-      S = m.s; offset = Date.now() - S.now;
-      render();
-    });
-    hostConn.on('close', () => fail('The host closed the session.'));
+    hostConn.on('data', m => relayed || onData(m));
+    hostConn.on('close', () => relayed || fail('The host closed the session.'));
   });
-  peer.on('error', e => netLog('join error:', e.type, e.message));
-  peer.on('error', e => fail(e.type === 'peer-unavailable' ? `No session found with code ${code}.` : `Connection problem: ${e.message}`));
+  peer.on('error', e => {
+    netLog('join error:', e.type, e.message);
+    if (!relayed) fail(e.type === 'peer-unavailable' ? `No session found with code ${code}.` : `Connection problem: ${e.message}`);
+  });
+}
+
+function joinRelay(name, code, onData) {
+  if (typeof mqtt === 'undefined') return fail('Could not load the relay library from unpkg.com. Turn off ad blockers for this site or try another network.');
+  const t = TOPIC + code, id = me ??= 'r' + Math.random().toString(36).slice(2, 10);
+  const send = m => c.publish(`${t}/host`, JSON.stringify({ from: id, m }));
+  const c = relay = mqtt.connect(BROKER, { will: { topic: `${t}/host`, payload: JSON.stringify({ from: id, m: { t: 'bye' } }) } });
+  c.on('connect', () => c.subscribe([`${t}/p/${id}`, `${t}/closed`], () => {
+    netLog('relay connected, joining');
+    hostConn = { open: true, send };
+    send({ t: 'join', name });
+  }));
+  c.on('error', e => netLog('relay error:', e.message));
+  c.on('message', (topic, buf) => {
+    if (topic.endsWith('/closed')) return fail('The host closed the session.');
+    let m;
+    try { m = JSON.parse(buf); } catch { return; }
+    onData(m);
+  });
 }
 
 function act(m) { isHost ? handle(me, m) : hostConn?.open && hostConn.send(m); }
