@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minigame</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Alegreya+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1 class="mark">Minigame</h1>
+  <p id="where" class="where"></p>
+</header>
+
+<main>
+  <!-- Home: host or join -->
+  <section id="home" class="screen">
+    <form id="hostForm" class="panel host">
+      <h2>Host an auction</h2>
+      <div class="grid">
+        <label>Your name <input id="hName" maxlength="20" required autocomplete="nickname"></label>
+        <label>Bidders (not you) <input id="players" type="number" min="2" max="8" value="4" required></label>
+        <label>Points per player <input id="points" type="number" min="10" max="100000" value="100" required></label>
+        <label>Max army size <input id="team" type="number" min="1" max="50" value="5" required></label>
+        <label>Lord of War opening bid <input id="lordMin" type="number" min="1" max="10" value="5" required></label>
+        <label>Lots to auction <input id="lots" type="number" min="1" max="200" value="24" required></label>
+        <label>Seconds per bid <input id="timer" type="number" min="5" max="120" value="20" required></label>
+      </div>
+      <h3>Factions in the pool</h3>
+      <div id="factions" class="factions"></div>
+      <div id="gods" class="gods" hidden></div>
+      <p id="poolInfo" class="hint"></p>
+      <button class="btn gilt" type="submit">Open session</button>
+    </form>
+
+    <form id="joinForm" class="panel join">
+      <h2>Join an auction</h2>
+      <label>Your name <input id="jName" maxlength="20" required autocomplete="nickname"></label>
+      <label>Session code <input id="code" maxlength="5" required autocapitalize="characters" spellcheck="false"></label>
+      <button class="btn" type="submit">Join</button>
+    </form>
+    <p id="homeMsg" class="msg" role="alert"></p>
+  </section>
+
+  <!-- Lobby -->
+  <section id="lobby" class="screen" hidden>
+    <div class="panel">
+      <p class="hint">Session code</p>
+      <p id="lobbyCode" class="code"></p>
+      <button id="copyLink" class="btn small" type="button">Copy invite link</button>
+      <p id="hostedBy" class="hint"></p>
+      <h3 id="seatCount"></h3>
+      <ol id="seats" class="seats"></ol>
+      <p id="lobbyRules" class="hint"></p>
+      <button id="start" class="btn gilt" type="button" hidden>Start auction</button>
+      <p id="lobbyWait" class="hint" hidden>Waiting for the host to start.</p>
+    </div>
+  </section>
+
+  <!-- Auction -->
+  <section id="auction" class="screen" hidden>
+    <aside class="side">
+      <div class="roster" id="roster" aria-label="Players"></div>
+      <button id="armiesBtn" class="btn small" type="button">View armies</button>
+    </aside>
+
+    <div class="stage">
+      <div id="lot" class="lot"></div>
+      <div id="seal" class="seal" hidden></div>
+    </div>
+
+    <div class="bidding panel">
+      <p class="hint">Highest bid</p>
+      <p class="bidnow"><span id="bidNow">0</span></p>
+      <p id="bidBy" class="hint"></p>
+      <div class="timer" aria-hidden="true"><i id="timerBar"></i></div>
+      <div id="myCtl" class="myctl">
+      <p class="hint">You have <b id="myPoints">0</b> points</p>
+      <div class="quick">
+        <button class="btn small" type="button" data-add="1">+1</button>
+        <button class="btn small" type="button" data-add="5">+5</button>
+        <button class="btn small" type="button" data-add="10">+10</button>
+      </div>
+      <label class="amount">Your bid <input id="amount" type="number" min="1" inputmode="numeric"></label>
+      <button id="bid" class="btn gilt" type="button">Bid</button>
+      <button id="pass" class="btn" type="button">Pass on this lot</button>
+      <p id="bidMsg" class="hint" role="status"></p>
+      </div>
+      <div id="hostCtl" class="hostctl" hidden>
+        <button id="skip" class="btn small" type="button">Skip lot</button>
+        <button id="end" class="btn small" type="button">End auction and fight</button>
+      </div>
+    </div>
+    <dialog id="armiesDlg" class="panel dlg" aria-labelledby="armiesTitle">
+      <h2 id="armiesTitle">Armies</h2>
+      <div id="armiesList" class="roster"></div>
+      <form method="dialog"><button class="btn" type="submit">Close</button></form>
+    </dialog>
+  </section>
+
+  <!-- Battle -->
+  <section id="battle" class="screen" hidden>
+    <h2 id="battleHead" class="battlehead">The armies meet</h2>
+    <p id="battleLine" class="battleline" aria-live="polite"></p>
+    <div id="arena" class="arena"></div>
+    <div class="battlectl">
+      <button id="replay" class="btn small" type="button">Replay fight</button>
+      <button id="again" class="btn gilt" type="button" hidden>Play again</button>
+    </div>
+  </section>
+</main>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="data.js"></script>
+<script src="images.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
