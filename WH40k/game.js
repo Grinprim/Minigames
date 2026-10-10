@@ -337,7 +337,8 @@ function joinSession(name, code) {
 
 function joinRelay(name, code, onData) {
   if (typeof mqtt === 'undefined') return fail('Could not load the relay library from unpkg.com. Turn off ad blockers for this site or try another network.');
-  const t = TOPIC + code, id = me ??= 'r' + Math.random().toString(36).slice(2, 10);
+  // Fresh id: the host may still hold the stuck direct connection under the old one.
+  const t = TOPIC + code, id = me = 'r' + Math.random().toString(36).slice(2, 10);
   const send = m => c.publish(`${t}/host`, JSON.stringify({ from: id, m }));
   const c = relay = mqtt.connect(BROKER, { will: { topic: `${t}/host`, payload: JSON.stringify({ from: id, m: { t: 'bye' } }) } });
   c.on('connect', () => c.subscribe([`${t}/p/${id}`, `${t}/closed`], () => {
