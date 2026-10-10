@@ -5,6 +5,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const U = Object.fromEntries(UNITS.map(u => [u.id, u]));
 const TYPE = { c: 'Named character', a: 'Army', l: 'Lord of War' };
 const PREFIX = 'mgwh-';
+const COIN = '<i class="coin" aria-hidden="true"></i>';
 const SOLD_PAUSE = 2600;
 
 let peer, isHost = false, me = null, S = null, hostConn = null, offset = 0;
@@ -12,12 +13,14 @@ const conns = new Map();
 
 // ---------- faction helpers ----------
 function factionOf(key) {
-  const [f, g] = key.split(':');
+  const [f, b] = key.split(':');
   const fac = FACTIONS.find(x => x.k === f);
-  const god = g && fac.gods.find(x => x.k === g);
-  return { n: god ? `${fac.n} · ${god.n}` : fac.n, c: (god || fac).c };
+  const sub = b && fac.subs.find(x => x.k === b);
+  return { n: sub ? `${fac.n} · ${sub.n}` : fac.n, c: (sub || fac).c };
 }
-const leafKeys = f => f.gods ? f.gods.map(g => `${f.k}:${g.k}`) : [f.k];
+const leafKeys = f => f.subs ? f.subs.map(b => `${f.k}:${b.k}`) : [f.k];
+const modeOf = k => MODES.find(m => m.k === k) || MODES[0];
+const poolFor = (factions, mode) => UNITS.filter(u => factions.includes(u.f) && modeOf(mode).f(u));
 
 // Portraits live in img/ (see images.js); units without one get a faction-coloured monogram.
 function art(id, cls = '') {
@@ -34,37 +37,54 @@ function fail(text) {
   peer?.destroy(); peer = null; S = null; isHost = false;
 }
 
-// ---------- home: faction picker ----------
+// ---------- home: game mode and faction picker ----------
 const picked = new Set(FACTIONS.flatMap(leafKeys));
-let godsOpen = false;
+let mode = 'classic', openSubs = null; // key of the faction whose branch picker is open
 
-function renderFactions() {
+function renderSetup() {
+  $('#modes').innerHTML = MODES.map(m =>
+    `<button type="button" class="mode" data-m="${m.k}" aria-pressed="${m.k === mode}"><b>${esc(m.n)}</b><span>${esc(m.d)}</span></button>`).join('');
+
   $('#factions').innerHTML = FACTIONS.map(f => {
     const keys = leafKeys(f), on = keys.filter(k => picked.has(k)).length;
-    const extra = f.gods ? ` <small>${on} of ${keys.length} gods</small>` : '';
-    const attr = f.gods ? `aria-expanded="${godsOpen}" aria-controls="gods"` : '';
+    const extra = f.subs ? ` <small>${on} of ${keys.length}</small>` : '';
+    const attr = f.subs ? `aria-expanded="${openSubs === f.k}" aria-controls="subs"` : '';
     return `<button type="button" class="fac" data-f="${f.k}" aria-pressed="${on > 0}" ${attr} style="--c:${f.c}">${esc(f.n)}${extra}</button>`;
   }).join('');
-  const chaos = FACTIONS.find(f => f.gods);
-  $('#gods').hidden = !godsOpen;
-  $('#gods').innerHTML = `<p class="hint">Which gods of Chaos are in the pool?</p>` + chaos.gods.map(g =>
-    `<button type="button" class="fac" data-g="chaos:${g.k}" aria-pressed="${picked.has('chaos:' + g.k)}" style="--c:${g.c}">${g.n}</button>`).join('');
-  const pool = UNITS.filter(u => picked.has(u.f)).length;
-  $('#poolInfo').textContent = pool ? `${pool} auctionables in the pool.` : 'Pick at least one faction.';
+
+  const f = FACTIONS.find(x => x.k === openSubs);
+  $('#subs').hidden = !f;
+  if (f) {
+    $('#subs').innerHTML = `<p class="hint">${esc(f.ask)} <button type="button" class="linkish" data-all="${f.k}">All</button> <button type="button" class="linkish" data-none="${f.k}">None</button></p>`
+      + f.subs.map(b => `<button type="button" class="fac" data-b="${f.k}:${b.k}" aria-pressed="${picked.has(f.k + ':' + b.k)}" style="--c:${b.c}">${esc(b.n)}</button>`).join('');
+  }
+
+  const pool = poolFor([...picked], mode).length;
+  $('#poolInfo').textContent = pool
+    ? `${pool} auctionables in the pool.`
+    : 'Nothing matches this mode with these factions. Pick more factions or another mode.';
 }
 
+$('#modes').addEventListener('click', e => {
+  const b = e.target.closest('[data-m]'); if (!b) return;
+  mode = b.dataset.m;
+  renderSetup();
+});
 $('#factions').addEventListener('click', e => {
   const b = e.target.closest('[data-f]'); if (!b) return;
   const f = FACTIONS.find(x => x.k === b.dataset.f);
-  if (f.gods) godsOpen = !godsOpen;
+  if (f.subs) openSubs = openSubs === f.k ? null : f.k;
   else picked.has(f.k) ? picked.delete(f.k) : picked.add(f.k);
-  renderFactions();
+  renderSetup();
 });
-$('#gods').addEventListener('click', e => {
-  const b = e.target.closest('[data-g]'); if (!b) return;
-  const k = b.dataset.g;
-  picked.has(k) ? picked.delete(k) : picked.add(k);
-  renderFactions();
+$('#subs').addEventListener('click', e => {
+  const t = e.target.closest('[data-b], [data-all], [data-none]'); if (!t) return;
+  if (t.dataset.b) picked.has(t.dataset.b) ? picked.delete(t.dataset.b) : picked.add(t.dataset.b);
+  else {
+    const f = FACTIONS.find(x => x.k === (t.dataset.all || t.dataset.none));
+    leafKeys(f).forEach(k => t.dataset.all ? picked.add(k) : picked.delete(k));
+  }
+  renderSetup();
 });
 
 // ---------- hosting ----------
@@ -153,7 +173,7 @@ function leave(id) {
 }
 
 function start() {
-  const pool = UNITS.filter(u => S.settings.factions.includes(u.f)).map(u => u.id);
+  const pool = poolFor(S.settings.factions, S.settings.mode).map(u => u.id);
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
   S.lots = pool.slice(0, S.settings.lots);
   S.i = -1;
@@ -257,14 +277,14 @@ function render() {
   if ($('#armiesDlg').open) $('#armiesList').innerHTML = armies();
 }
 
-// Every player's points, power and units. Inline for the host, in a dialog for bidders.
+// The host sees every army inline; a bidder's dialog shows only their own.
+// Power is never shown to anyone: lore knowledge is the only guide to what wins.
 function armies() {
-  return S.players.map(p => {
-    const power = p.won.reduce((s, id) => s + U[id].p, 0);
-    const units = p.won.map(id => `<li>${art(id, 'thumb')}<span>${esc(U[id].n)}</span><b>${U[id].p}</b></li>`).join('');
+  return S.players.filter(p => isHost || p.id === me).map(p => {
+    const units = p.won.map(id => `<li>${art(id, 'thumb')}<span>${esc(U[id].n)}</span></li>`).join('');
     return `<div class="who${S.bid?.by === p.id ? ' lead' : ''}${p.left ? ' out' : ''}">
       <p class="whoname">${esc(p.name)}${p.id === me ? ' <small>you</small>' : ''}${p.left ? ' <small>left</small>' : ''}</p>
-      <p class="hint">${p.points} pts left, power ${power}, ${p.won.length} of ${S.settings.team} units</p>
+      <p class="hint">${COIN}${p.points} coins left, ${p.won.length} of ${S.settings.team} units</p>
       <ul class="units">${units || '<li class="hint">Nothing bought yet</li>'}</ul>
     </div>`;
   }).join('');
@@ -279,7 +299,7 @@ function renderLobby() {
   $('#seats').innerHTML = S.players.map(p => `<li>${esc(p.name)}${p.id === me ? ' <small>you</small>' : ''}</li>`).join('')
     + Array.from({ length: S.settings.players - S.players.length }, () => '<li class="empty">Empty seat</li>').join('');
   const fac = [...new Set(S.settings.factions.map(k => k.split(':')[0]))].map(k => FACTIONS.find(f => f.k === k).n);
-  $('#lobbyRules').textContent = `${S.settings.points} points each, armies of up to ${S.settings.team}, Lords of War open at ${S.settings.lordMin}. ${S.settings.lots} lots, ${S.settings.timer} seconds per bid. Factions: ${fac.join(', ')}.`;
+  $('#lobbyRules').textContent = `${modeOf(S.settings.mode).n}. ${S.settings.points} coins each, armies of up to ${S.settings.team}, Lords of War open at ${S.settings.lordMin}. ${Math.min(S.settings.lots, poolFor(S.settings.factions, S.settings.mode).length)} lots, ${S.settings.timer} seconds per bid. Factions: ${fac.join(', ')}.`;
   $('#start').hidden = !isHost;
   $('#start').disabled = S.players.length < 2;
   $('#lobbyWait').hidden = isHost;
@@ -294,8 +314,7 @@ function renderAuction() {
     $('#lot').innerHTML = `
       <div class="relic" style="--c:${fac.c}">${art(u.id, 'big')}</div>
       <h2 class="lotname">${esc(u.n)}</h2>
-      <p class="lotmeta">${TYPE[u.t]} of the ${esc(fac.n)}</p>
-      <p class="power"><span>Power</span> ${u.p}</p>`;
+      <p class="lotmeta">${TYPE[u.t]} of the ${esc(fac.n)}</p>`;
     $('#amount').value = '';
   }
 
@@ -307,7 +326,7 @@ function renderAuction() {
     seal.hidden = !soldKey;
     if (soldKey) {
       seal.innerHTML = S.sold.by
-        ? `<b>Sold</b><span>${esc(nameOf(S.sold.by))}</span><span>${S.sold.amount} pts</span>`
+        ? `<b>Sold</b><span>${esc(nameOf(S.sold.by))}</span><span>${S.sold.amount} coins</span>`
         : `<b>Unsold</b>`;
       seal.classList.toggle('unsold', !S.sold.by);
     }
@@ -346,12 +365,12 @@ function renderAuction() {
   else if (full(my)) why = `Your army is full (${S.settings.team} of ${S.settings.team}).`;
   else if (S.passed.includes(me)) why = 'You passed on this lot.';
   else if (S.bid.by === me) why = 'You hold the highest bid.';
-  else if (my.points < min) why = `Not enough points. The lowest bid is ${min}.`;
+  else if (my.points < min) why = `Not enough coins. The lowest bid is ${min}.`;
   const off = S.stage !== 'bidding' || !!why;
   ['#bid', '#pass', '#amount'].forEach(s => { $(s).disabled = off; });
   document.querySelectorAll('[data-add]').forEach(b => { b.disabled = off; });
   $('#pass').disabled = S.stage !== 'bidding' || S.passed.includes(me) || S.bid.by === me || !!my.left;
-  $('#bidMsg').textContent = why || (S.stage === 'bidding' && !S.bid.amount && u.t === 'l' ? `Lords of War open at ${min} points.` : '');
+  $('#bidMsg').textContent = why || (S.stage === 'bidding' && !S.bid.amount && u.t === 'l' ? `Lords of War open at ${min} coins.` : '');
 }
 
 // countdown runs locally against the host clock
@@ -365,6 +384,12 @@ setInterval(() => {
 }, 100);
 
 // ---------- battle animation ----------
+// What each kind of unit does in the narration; no numbers, so power stays hidden.
+const DEEDS = {
+  c: ['duels the champions of', 'cuts a path through', 'slays the captains of'],
+  a: ['opens fire on', 'charges into', 'overruns a flank of'],
+  l: ['crushes', 'tramples the lines of', 'rains ruin on'],
+};
 let battleTimer = null;
 const calm = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -388,7 +413,6 @@ function playBattle() {
     return `<div class="fighter${max ? '' : ' fallen'}" data-id="${esc(p.id)}" data-max="${max}">
       <p class="whoname">${esc(p.name)}</p>
       <div class="hp"><i style="width:${max ? 100 : 0}%"></i></div>
-      <p class="hint"><span class="hpnum">${max}</span> of ${max} power</p>
       <div class="won">${p.won.map(id => art(id, 'thumb')).join('') || '<p class="hint">No army</p>'}</div>
     </div>`;
   }).join('');
@@ -402,17 +426,17 @@ function playBattle() {
       if (winner) col(winner)?.classList.add('victor');
       return;
     }
-    const [a, t, dmg, unit, after] = log[i++];
+    const [a, t, , unit, after] = log[i++];
     const A = col(a), T = col(t);
-    $('#battleLine').textContent = `${U[unit].n} (${nameOf(a)}) strikes ${nameOf(t)} for ${dmg}`;
+    const verbs = DEEDS[U[unit].t];
+    $('#battleLine').textContent = `${U[unit].n} (${nameOf(a)}) ${verbs[Math.random() * verbs.length | 0]} ${nameOf(t)}'s army`;
     [A, T].forEach(el => el?.classList.remove('strike', 'hit'));
     void A?.offsetWidth;
     A?.classList.add('strike'); T?.classList.add('hit');
     if (T) {
       T.querySelector('.hp i').style.width = `${after / T.dataset.max * 100}%`;
-      T.querySelector('.hpnum').textContent = after;
       const pop = document.createElement('span');
-      pop.className = 'pop'; pop.textContent = `−${dmg}`;
+      pop.className = 'pop';
       T.append(pop); setTimeout(() => pop.remove(), 900);
       if (after <= 0) T.classList.add('fallen');
     }
@@ -425,7 +449,7 @@ function playBattle() {
 $('#hostForm').addEventListener('submit', e => {
   e.preventDefault();
   const factions = [...picked];
-  if (!UNITS.some(u => factions.includes(u.f))) return renderFactions();
+  if (!poolFor(factions, mode).length) return renderSetup();
   $('#homeMsg').textContent = 'Opening session…';
   hostSession($('#hName').value.trim().slice(0, 20), {
     players: Math.max(2, Math.min(8, +$('#players').value)),
@@ -435,6 +459,7 @@ $('#hostForm').addEventListener('submit', e => {
     lots: +$('#lots').value,
     timer: +$('#timer').value,
     factions,
+    mode,
   });
 });
 $('#joinForm').addEventListener('submit', e => {
@@ -462,4 +487,4 @@ document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click',
 
 const invite = new URLSearchParams(location.search).get('join');
 if (invite) { $('#code').value = invite.toUpperCase(); $('#jName').focus(); }
-renderFactions();
+renderSetup();

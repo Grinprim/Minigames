@@ -23,15 +23,17 @@
       <div class="grid">
         <label>Your name <input id="hName" maxlength="20" required autocomplete="nickname"></label>
         <label>Bidders (not you) <input id="players" type="number" min="2" max="8" value="4" required></label>
-        <label>Points per player <input id="points" type="number" min="10" max="100000" value="100" required></label>
+        <label>Coins per player <input id="points" type="number" min="10" max="100000" value="100" required></label>
         <label>Max army size <input id="team" type="number" min="1" max="50" value="5" required></label>
         <label>Lord of War opening bid <input id="lordMin" type="number" min="1" max="10" value="5" required></label>
         <label>Lots to auction <input id="lots" type="number" min="1" max="200" value="24" required></label>
         <label>Seconds per bid <input id="timer" type="number" min="5" max="120" value="20" required></label>
       </div>
+      <h3>Game mode</h3>
+      <div id="modes" class="modes"></div>
       <h3>Factions in the pool</h3>
       <div id="factions" class="factions"></div>
-      <div id="gods" class="gods" hidden></div>
+      <div id="subs" class="subs" hidden></div>
       <p id="poolInfo" class="hint"></p>
       <button class="btn gilt" type="submit">Open session</button>
     </form>
@@ -64,7 +66,7 @@
   <section id="auction" class="screen" hidden>
     <aside class="side">
       <div class="roster" id="roster" aria-label="Players"></div>
-      <button id="armiesBtn" class="btn small" type="button">View armies</button>
+      <button id="armiesBtn" class="btn small" type="button">View my army</button>
     </aside>
 
     <div class="stage">
@@ -74,11 +76,11 @@
 
     <div class="bidding panel">
       <p class="hint">Highest bid</p>
-      <p class="bidnow"><span id="bidNow">0</span></p>
+      <p class="bidnow"><i class="coin" aria-hidden="true"></i><span id="bidNow">0</span></p>
       <p id="bidBy" class="hint"></p>
       <div class="timer" aria-hidden="true"><i id="timerBar"></i></div>
       <div id="myCtl" class="myctl">
-      <p class="hint">You have <b id="myPoints">0</b> points</p>
+      <p class="purse"><i class="wallet" aria-hidden="true"></i><span>Your wallet<b><span id="myPoints">0</span> coins</b></span></p>
       <div class="quick">
         <button class="btn small" type="button" data-add="1">+1</button>
         <button class="btn small" type="button" data-add="5">+5</button>
@@ -95,7 +97,7 @@
       </div>
     </div>
     <dialog id="armiesDlg" class="panel dlg" aria-labelledby="armiesTitle">
-      <h2 id="armiesTitle">Armies</h2>
+      <h2 id="armiesTitle">Your army</h2>
       <div id="armiesList" class="roster"></div>
       <form method="dialog"><button class="btn" type="submit">Close</button></form>
     </dialog>
