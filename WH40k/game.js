@@ -7,6 +7,11 @@ const TYPE = { c: 'Named character', a: 'Army', l: 'Lord of War' };
 const PREFIX = 'mgwh-';
 const COIN = '<i class="coin" aria-hidden="true"></i>';
 const SOLD_PAUSE = 2600;
+// Players behind strict NATs (mobile data, CGNAT, school/work wifi) can't connect directly and
+// need a TURN relay. PeerJS's built-in public TURN is often down, so paste your own here, e.g.
+// from a free metered.ca account: { urls: 'turn:global.relay.metered.ca:80', username: '…', credential: '…' }
+const TURN = [];
+const PEER_OPTS = TURN.length ? { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, ...TURN] } } : {};
 
 let peer, isHost = false, me = null, S = null, hostConn = null, offset = 0;
 const conns = new Map();
@@ -95,7 +100,7 @@ function makeCode() {
 
 function hostSession(name, settings) {
   const code = makeCode();
-  peer = new Peer(PREFIX + code);
+  peer = new Peer(PREFIX + code, PEER_OPTS);
   peer.on('open', () => {
     isHost = true; me = 'host';
     // The host runs the auction and never bids, so they are not in players.
@@ -243,10 +248,12 @@ function battle() {
 
 // ---------- joining ----------
 function joinSession(name, code) {
-  peer = new Peer();
+  const p = peer = new Peer(PEER_OPTS);
   peer.on('open', () => {
     me = peer.id;
     hostConn = peer.connect(PREFIX + code, { reliable: true });
+    // A blocked WebRTC link never errors, it just hangs, so give up visibly.
+    setTimeout(() => { if (peer === p && !hostConn.open) fail('Could not reach the host. One of you is likely on a strict network (mobile data, school/work wifi), so try another network.'); }, 15000);
     hostConn.on('open', () => hostConn.send({ t: 'join', name }));
     hostConn.on('data', m => {
       if (m.t === 'refused') return fail(m.why);
