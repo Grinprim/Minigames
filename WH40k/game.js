@@ -265,19 +265,26 @@ function battle() {
 
 // ---------- joining ----------
 function joinSession(name, code) {
+  netLog('joining', code);
+  if (typeof Peer === 'undefined') return fail('Could not load the connection library from unpkg.com. Turn off ad blockers for this site or try another network.');
   const p = peer = new Peer(PEER_OPTS);
+  let conn = null, types = new Set();
+  // A blocked link never errors, it just hangs (at the server or at the host), so give up visibly.
+  setTimeout(() => {
+    if (peer !== p || conn?.open) return;
+    if (!conn) {
+      netLog('gave up after 15s: never reached the PeerJS server');
+      return fail('Could not reach the matchmaking server (0.peerjs.com). A firewall, VPN or ad blocker may be blocking it, so try another network.');
+    }
+    const ice = conn.peerConnection?.iceConnectionState ?? 'none';
+    netLog('gave up after 15s, ICE state:', ice, 'candidates:', [...types].join(',') || 'none');
+    fail(`Could not reach the host. One of you is likely on a strict network (mobile data, school/work wifi), so try another network. [ICE: ${ice}, candidates: ${[...types].join(',') || 'none'}]`);
+  }, 15000);
   peer.on('open', () => {
     me = peer.id;
     netLog('signalling server ok, joining', code, TURN.length ? '(with TURN)' : '(no TURN configured)');
-    hostConn = peer.connect(PREFIX + code, { reliable: true });
-    const types = trace(hostConn, 'join');
-    // A blocked WebRTC link never errors, it just hangs, so give up visibly.
-    setTimeout(() => {
-      if (peer !== p || hostConn.open) return;
-      const ice = hostConn.peerConnection?.iceConnectionState ?? 'none';
-      netLog('gave up after 15s, ICE state:', ice, 'candidates:', [...types].join(',') || 'none');
-      fail(`Could not reach the host. One of you is likely on a strict network (mobile data, school/work wifi), so try another network. [ICE: ${ice}, candidates: ${[...types].join(',') || 'none'}]`);
-    }, 15000);
+    hostConn = conn = peer.connect(PREFIX + code, { reliable: true });
+    types = trace(hostConn, 'join');
     hostConn.on('open', () => { netLog('connected to host'); hostConn.send({ t: 'join', name }); });
     hostConn.on('data', m => {
       if (m.t === 'refused') return fail(m.why);
