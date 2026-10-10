@@ -13,6 +13,19 @@ const SOLD_PAUSE = 2600;
 const TURN = [];
 const PEER_OPTS = TURN.length ? { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, ...TURN] } } : {};
 
+// Connection diagnostics, shown in the browser console (F12) as [net] lines.
+// Candidate types: host = local network, srflx = public IP via STUN, relay = TURN.
+// ICE "failed" with no relay candidates means the network needs a TURN server.
+const netLog = (...a) => console.log('[net]', ...a);
+function trace(c, who) {
+  const pc = c.peerConnection, types = new Set();
+  if (!pc) return types;
+  pc.addEventListener('icecandidate', e => e.candidate && types.add(e.candidate.type) && netLog(who, 'candidate:', e.candidate.type, e.candidate.protocol));
+  pc.addEventListener('iceconnectionstatechange', () => netLog(who, 'ICE state:', pc.iceConnectionState));
+  c.on('error', e => netLog(who, 'connection error:', e.type, e.message));
+  return types;
+}
+
 let peer, isHost = false, me = null, S = null, hostConn = null, offset = 0;
 const conns = new Map();
 
@@ -102,17 +115,21 @@ function hostSession(name, settings) {
   const code = makeCode();
   peer = new Peer(PREFIX + code, PEER_OPTS);
   peer.on('open', () => {
+    netLog('host ready, code', code, TURN.length ? '(with TURN)' : '(no TURN configured)');
     isHost = true; me = 'host';
     // The host runs the auction and never bids, so they are not in players.
     S = { code, phase: 'lobby', settings, hostName: name, players: [] };
     broadcast();
   });
   peer.on('connection', c => {
+    netLog('player connecting:', c.peer);
+    trace(c, c.peer);
     conns.set(c.peer, c);
     c.on('data', m => handle(c.peer, m));
     c.on('close', () => leave(c.peer));
   });
   peer.on('error', e => {
+    netLog('host error:', e.type, e.message);
     if (e.type === 'unavailable-id') { peer.destroy(); hostSession(name, settings); }
     else if (e.type !== 'peer-unavailable') fail(`Connection problem: ${e.message}`);
   });
@@ -251,10 +268,17 @@ function joinSession(name, code) {
   const p = peer = new Peer(PEER_OPTS);
   peer.on('open', () => {
     me = peer.id;
+    netLog('signalling server ok, joining', code, TURN.length ? '(with TURN)' : '(no TURN configured)');
     hostConn = peer.connect(PREFIX + code, { reliable: true });
+    const types = trace(hostConn, 'join');
     // A blocked WebRTC link never errors, it just hangs, so give up visibly.
-    setTimeout(() => { if (peer === p && !hostConn.open) fail('Could not reach the host. One of you is likely on a strict network (mobile data, school/work wifi), so try another network.'); }, 15000);
-    hostConn.on('open', () => hostConn.send({ t: 'join', name }));
+    setTimeout(() => {
+      if (peer !== p || hostConn.open) return;
+      const ice = hostConn.peerConnection?.iceConnectionState ?? 'none';
+      netLog('gave up after 15s, ICE state:', ice, 'candidates:', [...types].join(',') || 'none');
+      fail(`Could not reach the host. One of you is likely on a strict network (mobile data, school/work wifi), so try another network. [ICE: ${ice}, candidates: ${[...types].join(',') || 'none'}]`);
+    }, 15000);
+    hostConn.on('open', () => { netLog('connected to host'); hostConn.send({ t: 'join', name }); });
     hostConn.on('data', m => {
       if (m.t === 'refused') return fail(m.why);
       if (m.t !== 'state') return;
@@ -263,6 +287,7 @@ function joinSession(name, code) {
     });
     hostConn.on('close', () => fail('The host closed the session.'));
   });
+  peer.on('error', e => netLog('join error:', e.type, e.message));
   peer.on('error', e => fail(e.type === 'peer-unavailable' ? `No session found with code ${code}.` : `Connection problem: ${e.message}`));
 }
 
