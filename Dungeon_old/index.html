@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thessaros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="temple.css">
+</head>
+<body>
+<canvas id="ambient"></canvas>
+
+<div id="threshold">
+  <div>
+    <div class="creed"></div>
+    <h1>Thessaros</h1>
+    <p>A temple spirals down into the void. Something at the bottom is patient.</p>
+    <button type="button" id="enter">Descend</button>
+    <small>Sound on. The abyss breathes. (M to mute)</small>
+  </div>
+</div>
+
+<main>
+  <section data-view="map"></section>
+  <section data-view="hall"></section>
+  <section data-view="wall"></section>
+  <section data-view="gallery"></section>
+  <section data-view="coil"></section>
+  <section data-view="liturgy"></section>
+  <section data-view="ring"></section>
+  <section data-view="door"></section>
+  <section data-view="sanctum"></section>
+</main>
+
+<nav id="keyring" aria-label="Keys"></nav>
+<div id="toast" role="status"></div>
+<div id="fade"></div>
+<div id="wipe"></div>
+
+<div id="award" hidden>
+  <div>
+    <svg class="bigkey" viewBox="-37 -12 40 22" id="award-key" aria-hidden="true"></svg>
+    <div class="txt">
+      <p class="tag">A key is yours</p>
+      <h2 id="award-name"></h2>
+      <p id="award-text"></p>
+      <p class="etched" id="award-next"></p>
+      <div class="ctrls">
+        <button type="button" id="award-back">Return to the Descent</button>
+        <button type="button" id="award-stay">Stay a while</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="glyphs.js"></script>
+<script src="temple.js"></script>
+<script src="rooms.js"></script>
+<script src="sanctum.js"></script>
+</body>
+</html>

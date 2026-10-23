@@ -1,0 +1,1660 @@
+================file name: index.html
+Description: Main page of the Thessaros game. Loads the fonts, stylesheet and scripts and holds the page layout.
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thessaros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="temple.css">
+</head>
+<body>
+<canvas id="ambient"></canvas>
+
+<div id="threshold">
+  <div>
+    <div class="creed"></div>
+    <h1>Thessaros</h1>
+    <p>A temple spirals down into the void. Something at the bottom is patient.</p>
+    <button type="button" id="enter">Descend</button>
+    <small>Sound on. The abyss breathes. (M to mute)</small>
+  </div>
+</div>
+
+<main>
+  <section data-view="map"></section>
+  <section data-view="hall"></section>
+  <section data-view="wall"></section>
+  <section data-view="gallery"></section>
+  <section data-view="coil"></section>
+  <section data-view="liturgy"></section>
+  <section data-view="ring"></section>
+  <section data-view="door"></section>
+  <section data-view="sanctum"></section>
+</main>
+
+<nav id="keyring" aria-label="Keys"></nav>
+<div id="toast" role="status"></div>
+<div id="fade"></div>
+<div id="wipe"></div>
+
+<div id="award" hidden>
+  <div>
+    <svg class="bigkey" viewBox="-37 -12 40 22" id="award-key" aria-hidden="true"></svg>
+    <div class="txt">
+      <p class="tag">A key is yours</p>
+      <h2 id="award-name"></h2>
+      <p id="award-text"></p>
+      <p class="etched" id="award-next"></p>
+      <div class="ctrls">
+        <button type="button" id="award-back">Return to the Descent</button>
+        <button type="button" id="award-stay">Stay a while</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="glyphs.js"></script>
+<script src="temple.js"></script>
+<script src="rooms.js"></script>
+<script src="sanctum.js"></script>
+</body>
+</html>
+
+
+================file name: temple.css
+Description: All the styling for the game: colors, buttons, glyphs, rooms and animations.
+
+:root { --bone: #e6dcc8; --dim: #a09484; --faint: #6f6458; --violet: #a477ff; --ember: #ff6a1a; --venom: #9dff3a; --c: #a477ff; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; color: var(--bone); background: #0d0a0f; font: 500 1.1rem/1.6 'Cormorant Garamond', Georgia, serif; overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; z-index: -2; transition: background 1.2s;
+  background: radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--c) 16%, #1a1220), #0d0a0f 55%, #050306); }
+#ambient { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+a { color: inherit; }
+button, .btn { font: 700 .76rem 'Cinzel', serif; letter-spacing: .16em; text-transform: uppercase; color: var(--bone); text-decoration: none;
+  background: #140d18; border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); padding: .65rem 1.1rem; border-radius: 2px; cursor: pointer;
+  display: inline-block; transition: border-color .3s, box-shadow .3s, transform .15s, background .3s; }
+button:hover, .btn:hover { border-color: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent); }
+button:active { transform: scale(.96); }
+button:disabled { opacity: .4; cursor: default; }
+:focus-visible { outline: 2px solid var(--venom); outline-offset: 3px; }
+.glyphs { fill: none; stroke: currentColor; stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; display: block; max-width: 100%; }
+.draw path { stroke-dasharray: 60; animation: draw 1.4s ease-out both; }
+@keyframes draw { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
+.tag { font: 700 .72rem 'Cinzel'; letter-spacing: .38em; text-transform: uppercase; color: var(--c); margin: 0; }
+h1, h2, h3 { font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: .08em; margin: .2em 0 .5em; line-height: 1.15; }
+.flavor { font-style: italic; color: #cfc3b0; }
+.etched { text-align: center; font-style: italic; color: var(--dim); }
+.fb { min-height: 1.6em; margin: .6rem 0 0; color: #ffa27e; font-style: italic; text-align: center; }
+.fb.good { color: var(--venom); }
+.shake { animation: shake .5s; }
+@keyframes shake { 20%, 60% { translate: -9px 0; } 40%, 80% { translate: 9px 0; } }
+@keyframes breathe { 50% { opacity: .45; } }
+@keyframes rise { from { opacity: 0; translate: 0 18px; } }
+[hidden] { display: none !important; }
+
+/* ---------- threshold ---------- */
+#threshold { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; text-align: center; padding: 16px;
+  background: radial-gradient(circle at 50% 45%, #1c0f26 0, #050306 70%); transition: opacity 1.6s, visibility 1.6s; }
+#threshold.gone { opacity: 0; visibility: hidden; }
+#threshold .glyphs { height: 26px; margin: 0 auto 1.2rem; color: var(--violet); filter: drop-shadow(0 0 8px #a477ff); }
+#threshold h1 { font-size: clamp(2.6rem, 11vw, 6rem); letter-spacing: .3em; margin: 0 0 .1em .3em; color: #e8def4; text-shadow: 0 0 40px #7a3cff99;
+  animation: rise 2s ease both; }
+#threshold p { color: var(--dim); font-style: italic; margin: 0 0 2rem; animation: rise 2s .4s ease both; }
+#threshold button { animation: rise 2s .8s ease both; }
+#threshold small { display: block; margin-top: 1.2rem; color: var(--faint); font-style: italic; }
+
+/* ---------- views & transitions ---------- */
+main > section { display: none; min-height: 100vh; padding: 70px 16px 120px; }
+main > section.on { display: block; }
+main > section.on > * { animation: rise .9s ease both; }
+main > section.on > :nth-child(2) { animation-delay: .08s; } main > section.on > :nth-child(3) { animation-delay: .16s; }
+main > section.on > :nth-child(4) { animation-delay: .24s; } main > section.on > :nth-child(n+5) { animation-delay: .32s; }
+#wipe { position: fixed; inset: 0; z-index: 45; pointer-events: none; background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #000 60%, #1a0830);
+  clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path .65s cubic-bezier(.7, 0, .3, 1); }
+#wipe.on { clip-path: circle(150vmax at var(--x, 50%) var(--y, 50%)); pointer-events: auto; }
+.backlink { position: fixed; top: 14px; left: 16px; z-index: 6; font: 700 .72rem 'Cinzel'; letter-spacing: .18em; text-transform: uppercase;
+  text-decoration: none; color: var(--dim); background: #0b080dcc; padding: .5rem .8rem; border: 1px solid #ffffff1c; animation: none !important; }
+.backlink:hover { color: var(--bone); border-color: var(--c); }
+
+/* ---------- the map ---------- */
+section[data-view="map"] { padding: 0; height: 100vh; overflow: hidden; }
+.maphud { position: fixed; top: 12px; left: 16px; right: 16px; z-index: 5; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+.maphud .logo { font: 700 clamp(.9rem, 2.6vw, 1.2rem) 'Cinzel'; letter-spacing: .3em; color: #ddd3ee; text-shadow: 0 0 14px #7a3cff88; }
+.maphud .logo small { display: block; font: italic 500 .9rem 'Cormorant Garamond'; letter-spacing: 0; color: var(--dim); }
+.maphud .prog { font: 700 .7rem 'Cinzel'; letter-spacing: .2em; color: var(--dim); text-align: right; }
+#map { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: min(100vw, calc(100vh - 40px)); height: min(100vw, calc(100vh - 40px)); overflow: visible; }
+.ramp-edge { fill: none; stroke: #000; stroke-width: 82; stroke-linecap: round; }
+.ramp { fill: none; stroke: url(#rampG); stroke-width: 70; stroke-linecap: round; }
+.ramp-steps { fill: none; stroke: #00000070; stroke-width: 66; stroke-dasharray: 3 19; }
+.ramp-lip { fill: none; stroke: #ffffff10; stroke-width: 74; stroke-dasharray: 1 999999; }
+.ramp-glow { fill: none; stroke: #a477ff; stroke-width: 5; stroke-linecap: round; filter: url(#mglow); opacity: .75;
+  transition: stroke-dashoffset 2.2s ease; }
+.node { cursor: pointer; }
+.node .halo { fill: var(--c); opacity: 0; transition: opacity .5s; }
+.node.open .halo { animation: halo 2.6s ease-in-out infinite; }
+@keyframes halo { 50% { opacity: .22; } }
+.node .disc { fill: url(#medal); stroke: #000; stroke-width: 3; }
+.node .ring { fill: none; stroke: var(--c); stroke-width: 3; opacity: .8; transition: stroke-width .3s; }
+.node:hover .ring, .node.here .ring { stroke-width: 6; }
+.node .nsig { fill: none; stroke: var(--c); stroke-width: .5; stroke-linecap: round; stroke-linejoin: round; filter: url(#mglow); }
+.node.locked { cursor: not-allowed; }
+.node.locked .nsig, .node.locked .ring { stroke: #4a4250; filter: none; }
+.node .badge { opacity: 0; transition: opacity .5s; }
+.node.solved .badge, .node.locked .badge { opacity: 1; }
+.node .lbl { font: 700 22px 'Cinzel'; fill: #ddd3c4; text-anchor: middle; letter-spacing: 2px; paint-order: stroke; stroke: #0a070c; stroke-width: 6px; }
+.node.locked .lbl { fill: #6a6070; }
+#token { pointer-events: none; }
+#token .flame { transform-box: fill-box; transform-origin: 50% 90%; animation: flick .18s ease-in-out infinite alternate; }
+@keyframes flick { to { transform: scale(.9, 1.08) rotate(3deg); } }
+.trail { fill: #ffd27a; animation: trail .9s ease-out forwards; }
+@keyframes trail { to { opacity: 0; r: 1; } }
+.spin-slow { animation: spin 160s linear infinite; } .spin-rev { animation: spin 220s linear infinite reverse; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#card { position: fixed; z-index: 8; left: 50%; bottom: 74px; translate: -50% 0; width: min(440px, calc(100vw - 32px)); text-align: center; padding: 16px 18px;
+  background: linear-gradient(#1a1220f2, #0b080df2); border: 1px solid var(--c); box-shadow: 0 0 40px #000, 0 0 20px color-mix(in srgb, var(--c) 30%, transparent);
+  animation: rise .45s ease both; }
+@media (min-width: 980px) { #card { left: auto; right: 28px; top: 50%; bottom: auto; translate: 0 -50%; width: 330px; } }
+#card h3 { margin: .2rem 0 .3rem; font-size: 1.3rem; }
+#card p { margin: 0 0 .7rem; font-style: italic; color: #cfc3b0; }
+#card .state { font: 700 .7rem 'Cinzel'; letter-spacing: .2em; text-transform: uppercase; color: var(--c); font-style: normal; }
+
+/* ---------- keyring ---------- */
+#keyring { position: fixed; bottom: 14px; left: 50%; translate: -50% 0; z-index: 7; display: flex; gap: 8px; padding: 8px 10px;
+  background: #0a070ccc; border: 1px solid #ffffff14; backdrop-filter: blur(4px); }
+#keyring .slot { width: 44px; height: 26px; display: grid; place-items: center; color: #ffffff2a; border: 1px solid #ffffff1c; border-radius: 13px; transition: .6s; }
+#keyring .slot svg { width: 34px; height: 14px; overflow: visible; }
+#keyring .slot.got { color: var(--c); border-color: var(--c); box-shadow: 0 0 12px var(--c), inset 0 0 8px var(--c); }
+#keyring .slot.turned { opacity: .45; box-shadow: none; }
+#keyring .slot.pop { animation: pop .8s; }
+@keyframes pop { 0% { transform: scale(1.8); filter: brightness(3); } }
+body[data-view="sanctum"] #keyring { display: none; }
+#toast { position: fixed; z-index: 60; left: 50%; top: 16%; translate: -50% 0; padding: .7rem 1.1rem; max-width: calc(100vw - 32px);
+  background: #0b0710ee; border: 1px solid #ff6a1a66; color: #ffcdb8; font-style: italic; opacity: 0; transition: opacity .5s; pointer-events: none; text-align: center; }
+#toast.on { opacity: 1; }
+#dev { position: fixed; z-index: 70; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 4px; padding: 8px;
+  background: #000d; border: 1px dashed #9dff3a88; --c: #9dff3a; }
+#dev b { font: 700 .65rem 'Cinzel'; letter-spacing: .2em; color: var(--venom); text-align: center; }
+#dev button { padding: .35rem .6rem; font-size: .62rem; }
+
+/* ---------- key award ---------- */
+#award { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; text-align: center;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 18%, #000d), #000e 70%); }
+#award .bigkey { width: min(70vw, 340px); overflow: visible; color: var(--c); filter: drop-shadow(0 0 12px var(--c)) drop-shadow(0 0 30px var(--c)); }
+#award.show .bigkey { animation: keyIn 1.6s cubic-bezier(.2, .8, .2, 1) both; }
+#award.show .txt { animation: rise 1.2s 1.2s both; }
+@keyframes keyIn { 0% { transform: scale(0) rotate(-300deg); opacity: 0; } 70% { transform: scale(1.12) rotate(8deg); opacity: 1; } 100% { transform: none; } }
+#award h2 { font-size: clamp(1.4rem, 5vw, 2.2rem); color: var(--c); margin: .6rem 0 .3rem; }
+#award p { max-width: 480px; margin: 0 auto 1.4rem; font-style: italic; }
+.flykey { position: fixed; z-index: 65; pointer-events: none; color: var(--c); filter: drop-shadow(0 0 10px var(--c)); overflow: visible; }
+
+/* ---------- rooms ---------- */
+.wrap { max-width: 900px; margin: 0 auto; }
+.ch-head { text-align: center; max-width: 720px; margin: 0 auto 2rem; }
+.ch-head .glyphs { height: 30px; margin: .8rem auto .2rem; color: var(--c); filter: drop-shadow(0 0 6px var(--c)); }
+.ch-head .translit { margin: 0; font-style: italic; color: var(--dim); }
+.ch-head h2 { font-size: clamp(1.7rem, 6vw, 3rem); margin: .3rem 0 .6rem; }
+.claimed { max-width: 640px; margin: 0 auto 2rem; text-align: center; padding: .8rem 1rem; border: 1px solid var(--c);
+  background: color-mix(in srgb, var(--c) 12%, transparent); font-style: italic; }
+.panel { max-width: 860px; margin: 0 auto 2rem; padding: clamp(16px, 4vw, 32px); position: relative;
+  background: linear-gradient(160deg, #1d1720, #0f0b12); border: 1px solid #ffffff14; box-shadow: inset 0 0 60px #000, 0 20px 40px #0008; }
+.panel h3 { font-size: 1.05rem; letter-spacing: .14em; color: var(--c); }
+.speak { max-width: 560px; margin: 2rem auto; text-align: center; }
+.speak label { display: block; font-style: italic; color: #d8cbe8; margin-bottom: .5rem; font-size: 1.2rem; }
+.speakrow { display: flex; gap: 8px; }
+.speak input, .slate input { flex: 1; min-width: 0; width: 100%; padding: .7rem .9rem; background: #050307; color: #fff; text-align: center; border: 1px solid #ffffff33;
+  font: 700 1.05rem 'Cinzel'; letter-spacing: .3em; text-transform: uppercase; }
+.speak input:focus, .slate input:focus { border-color: var(--c); outline: none; box-shadow: 0 0 14px color-mix(in srgb, var(--c) 40%, transparent); }
+.ctrls { display: flex; gap: 8px; justify-content: center; margin: 1rem 0; flex-wrap: wrap; }
+
+/* hall of glyphs */
+.tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.tabs button[aria-selected="true"] { background: color-mix(in srgb, var(--c) 22%, #140d18); border-color: var(--c); }
+.tabpanel { animation: rise .5s ease both; }
+.heads { width: 100%; border-collapse: collapse; }
+.heads th, .heads td { border: 1px solid #ffffff14; padding: 8px 4px; text-align: center; }
+.heads th { font: 700 .66rem 'Cinzel'; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; }
+.heads td { font: 700 1rem 'Cinzel'; color: var(--c); }
+.heads td .glyphs { height: 40px; margin: 0 auto 4px; color: var(--bone); }
+.heads td:hover .glyphs path { animation: draw 1.2s ease-out; stroke-dasharray: 60; }
+.slate .out { min-height: 60px; margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--c); justify-content: center; }
+.slate .out .glyphs { height: 38px; }
+.lex { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.lex div { padding: 10px; border: 1px solid #ffffff12; background: #00000030; }
+.lex .glyphs { height: 22px; color: var(--c); margin-bottom: 4px; }
+.lex b { font-family: 'Cinzel'; } .lex span { color: var(--dim); font-style: italic; }
+.rule { border-left: 3px solid var(--c); padding: .4rem 0 .4rem 1rem; margin: 1rem 0; }
+.trial { text-align: center; }
+.trial .big { height: 130px; margin: .5rem auto 1rem; color: var(--c); filter: drop-shadow(0 0 10px var(--c)); }
+.trial .big .glyphs { height: 130px; margin: 0 auto; stroke-width: .9; }
+.trial .opts { display: grid; grid-template-columns: repeat(4, minmax(0, 90px)); gap: 8px; justify-content: center; }
+.trial .opts button { font-size: 1.4rem; padding: .7rem 0; letter-spacing: 0; }
+.trial .opts button.right { background: #1f5a2a; border-color: var(--venom); }
+.trial .opts button.wrong { background: #5a1f1f; border-color: #ff3b12; }
+.timer { height: 4px; background: #ffffff14; margin: 1rem auto; max-width: 400px; overflow: hidden; }
+.timer i { display: block; height: 100%; background: var(--c); transform-origin: left; }
+.timer i.run { animation: tick linear forwards; }
+@keyframes tick { to { transform: scaleX(0); } }
+.hud { display: flex; justify-content: center; gap: 22px; font: 700 .78rem 'Cinzel'; letter-spacing: .15em; color: var(--dim); }
+.hud .lives { color: var(--ember); letter-spacing: .3em; }
+
+/* I. the speaking wall */
+.inscr { display: flex; flex-wrap: wrap; gap: 12px 20px; justify-content: center; }
+.word { display: flex; gap: 2px; }
+.gcell { width: 26px; display: grid; justify-items: center; color: #e3d6bd; }
+.gcell svg { width: 18px; height: 31px; }
+.gcell b { font: 700 .95rem 'Cinzel'; color: var(--c); height: 1.3em; border-top: 1px solid #ffffff22; width: 100%; text-align: center; transition: color .3s; }
+.gdot { width: 10px; } .gdot svg { width: 10px; height: 31px; }
+.inscr.clear .gcell b { color: #fff; text-shadow: 0 0 10px var(--c); }
+.dial { max-width: 460px; margin: 1rem auto 0; touch-action: none; user-select: none; cursor: grab; }
+.dial svg { width: 100%; display: block; overflow: visible; }
+.dial .inner { transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
+.dial.dragging .inner { transition: none; }
+.dial .lat { font: 700 15px 'Cinzel'; fill: #d8cbb2; text-anchor: middle; }
+
+/* II. gallery */
+.queen { max-width: 280px; margin: 0 auto 1rem; }
+.queen svg { width: 100%; display: block; }
+.queen .qeye { fill: #6f6a74; transition: fill .4s, filter .4s; }
+.queen.fed .qeye { fill: #b6ff4a; filter: drop-shadow(0 0 6px #9dff3a); }
+.queen.angry .qeye { fill: #ff3b12; filter: drop-shadow(0 0 6px #ff3b12); }
+.plinths { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 700px; margin: 0 auto 1rem; }
+.plinth { text-align: center; padding: 10px 4px; background: linear-gradient(#2a2428, #141015); border: 1px solid #ffffff14; min-height: 92px; }
+.plinth span { display: block; font: 700 .6rem 'Cinzel'; letter-spacing: .2em; color: var(--faint); text-transform: uppercase; }
+.plinth .glyphs { height: 22px; margin: 8px auto 4px; color: var(--c); animation: rise .4s both; }
+.plinth b { font: 700 1.3rem 'Cinzel'; color: var(--venom); text-shadow: 0 0 10px var(--venom); }
+.statues { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; max-width: 860px; margin: 0 auto 1rem; }
+.statue { text-align: center; padding: 12px; letter-spacing: 0; text-transform: none; font: inherit; color: inherit;
+  background: linear-gradient(#2c262c, #151116); border: 1px solid #ffffff14; transition: opacity .4s, transform .3s; }
+.statue:hover { transform: translateY(-4px); }
+.statue svg.fig-svg { width: 64px; height: 96px; display: block; margin: 0 auto 8px; }
+.statue .glyphs { height: 20px; margin: 4px auto; color: #e3d6bd; }
+.statue .role { color: var(--c); height: 15px; }
+.statue.placed { opacity: .25; transform: scale(.95); }
+.fig { fill: url(#stoneFig); stroke: #0a080b; stroke-width: 1.2; stroke-linejoin: round; }
+.figline { fill: none; stroke: #8f8790; stroke-width: 2; stroke-linecap: round; }
+ol.clues li { margin-bottom: .55rem; }
+
+/* III. coil */
+.coilwrap { max-width: 560px; margin: 0 auto; }
+.coilwrap svg { width: 100%; display: block; overflow: visible; }
+.scale { cursor: pointer; }
+.scale .sc { fill: #261c22; stroke: #000; stroke-width: 1.5; transition: fill .3s; }
+.scale:hover .sc { fill: #3a2b38; }
+.scale.sel .sc { fill: #4b2a7a; filter: drop-shadow(0 0 6px #a477ff); }
+.scale .sg { fill: none; stroke: #efe4cd; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.scale .badge { font: 700 11px 'Cinzel'; fill: #c8a8ff; }
+#cpath { fill: none; stroke: #a477ff; stroke-width: 1.6; stroke-dasharray: 4 3; opacity: .7; }
+.picks { display: flex; gap: 6px; justify-content: center; margin: 1rem 0; }
+.picks span { width: 34px; height: 50px; display: grid; place-items: center; border: 1px solid #ffffff22; color: var(--c); }
+.picks .glyphs { height: 30px; }
+.coilwrap.solved .sc { fill: #4b2a7a; }
+
+/* IV. liturgy */
+.lines-l { display: grid; gap: 14px; }
+.lline { padding: 12px; border: 1px solid #ffffff14; background: #00000030; transition: border-color .4s, box-shadow .4s; }
+.lline.cur { border-color: color-mix(in srgb, var(--c) 60%, transparent); }
+.lline.done { border-color: var(--c); box-shadow: 0 0 18px color-mix(in srgb, var(--c) 35%, transparent); }
+.lline p { margin: 0 0 8px; font-style: italic; text-align: center; }
+.lslots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.lslot { min-width: 90px; min-height: 52px; border: 1px dashed #ffffff30; display: grid; place-items: center; padding: 6px; }
+.lslot .glyphs { height: 26px; color: var(--c); }
+.pool { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 1.2rem; }
+.tile { padding: 10px 12px; letter-spacing: 0; color: #e3d6bd; animation: rise .4s both; }
+.tile .glyphs { height: 24px; }
+.tile.used { visibility: hidden; }
+
+/* V. ring */
+.endring { max-width: 520px; margin: 0 auto 1rem; }
+.endring svg { width: 100%; display: block; }
+.endring .spin { animation: spin 300s linear infinite reverse; }
+.endring:hover .spin, .endring:active .spin { animation-play-state: paused; }
+
+/* ---------- the door ---------- */
+section[data-view="door"] { text-align: center; }
+section[data-view="door"] h2 { font-size: clamp(1.6rem, 5vw, 2.6rem); letter-spacing: .2em; }
+.doorbox { width: min(92vw, calc(100vh - 260px), 640px); margin: 0 auto; aspect-ratio: 1; }
+#door { width: 100%; height: 100%; overflow: visible; }
+.doorhint { color: var(--dim); font-style: italic; min-height: 1.6em; }
+.cut { fill: none; stroke: #07050a; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.cut.hi { stroke: #ffffff1a; }
+.groove { fill: none; stroke: #000a; stroke-width: 1.4; } .groove.hi { stroke: #ffffff14; stroke-width: .7; }
+.carve { fill: none; stroke: #0008; stroke-width: .7; }
+.ch0 { stroke: #0b0807; stroke-width: 4.6; stroke-linecap: round; }
+.ch1 { stroke: #6e6157; stroke-width: 2.6; stroke-dasharray: 3.6 1.7; }
+.crack { fill: none; stroke: #ff6a1a; stroke-width: 1.4; stroke-dasharray: 1; stroke-dashoffset: 1; filter: url(#glow); }
+.lock { cursor: pointer; }
+.lk { transform-box: fill-box; transform-origin: 50% 50%; }
+.lock .body { fill: url(#iron); stroke: #000; stroke-width: .8; }
+.lock .rim { fill: none; stroke: currentColor; stroke-width: .7; opacity: .55; }
+.lock .shackle { fill: none; stroke: url(#ironV); stroke-width: 3.4; }
+.lock .sig { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; filter: url(#glow); }
+.lock.sealed { opacity: .5; } .lock.sealed .sig { opacity: .35; }
+.lock.ready .sig { animation: breathe .9s ease-in-out infinite; }
+.lock .hole { fill: #020103; }
+.k { fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; }
+#fade { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0; pointer-events: none; transition: opacity 1.6s; }
+#fade.on { opacity: 1; }
+
+/* ---------- sanctum ---------- */
+section[data-view="sanctum"] { padding: 0; }
+section[data-view="sanctum"].on > * { animation: none; }
+#serpent { position: fixed; inset: 0; width: 100%; height: 100%; }
+#reveal { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; padding: 16px; overflow: auto;
+  background: radial-gradient(circle, #000c 0, #000a 45%, #0000 80%); }
+.lines { max-width: 600px; text-align: center; }
+.lines p { margin: 0 0 .7rem; opacity: 0; translate: 0 10px; transition: opacity 1.4s, translate 1.4s; font-size: clamp(1rem, 2.4vh, 1.2rem); }
+.lines p.on { opacity: 1; translate: 0 0; }
+.lines .glyphs { height: 22px; margin: 0 auto .2rem; color: var(--ember); filter: drop-shadow(0 0 6px #ff5a1f); }
+.lines .sign { font-family: 'Cinzel'; letter-spacing: .3em; color: var(--ember); }
+#reveal .ctrls { margin-top: .5rem; }
+@media (max-width: 560px) {
+  .plinths { gap: 4px; } .plinth { padding: 8px 2px; }
+  .trial .opts { grid-template-columns: repeat(2, minmax(0, 120px)); }
+}
+
+
+================file name: temple.js
+Description: Shared core: game state, abyss music, transitions, keyring, dev panel and the spiral map of the Descent.
+
+// Thessaros: shared core. State, the abyss music, transitions, keyring, dev panel and the spiral map of the Descent.
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const NS = 'http://www.w3.org/2000/svg', TAU = Math.PI * 2;
+const smooth = x => (x = Math.max(0, Math.min(1, x)), x * x * (3 - 2 * x));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const pick = a => a[Math.random() * a.length | 0];
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// cyrb53: answers live in the code only as hashes, so a peek at the source spoils nothing.
+const hash = (s, seed = 1337) => { let a = 0xdeadbeef ^ seed, b = 0x41c6ce57 ^ seed;
+  for (const c of s) { const k = c.charCodeAt(0); a = Math.imul(a ^ k, 2654435761); b = Math.imul(b ^ k, 1597334677); }
+  a = Math.imul(a ^ (a >>> 16), 2246822507) ^ Math.imul(b ^ (b >>> 13), 3266489909);
+  b = Math.imul(b ^ (b >>> 16), 2246822507) ^ Math.imul(a ^ (a >>> 13), 3266489909);
+  return (4294967296 * (2097151 & b) + (a >>> 0)).toString(36); };
+const norm = s => s.toUpperCase().replace(/[^A-Z]/g, '');
+const spiralPath = (r0, r1, turns, n, cx = 0, cy = 0) => { let d = '';
+  for (let i = 0; i <= n; i++) { const q = i / n, a = q * TAU * turns, r = r0 + q * (r1 - r0);
+    d += (i ? 'L' : 'M') + (cx + Math.cos(a) * r).toFixed(2) + ' ' + (cy + Math.sin(a) * r).toFixed(2); } return d; };
+
+// The five key rooms, in the order the path reaches them.
+const CH = [
+  { id: 'wall', n: 'I', name: 'The Speaking Wall', key: 'Key of Echoes', lock: 'Lock of Echoes', tongue: 'ZHAAL VORZ', tr: 'zhaal vorz: the stone that speaks',
+    color: '#3fd8a4', sig: 'M-6 2Q0 -3 6 2Q0 9 -6 2ZM-6 2H6M-3 -4V-1M0 -5V-2M3 -4V-1',
+    blurb: 'An inscription that only speaks when the serpent alphabet is turned.',
+    flavor: 'A wall of black glass covered in coiled letters. They are glyphs you know, yet they spell nonsense. Before the wall stands a stone dial: the serpent alphabet, wound into a ring and biting its own tail.',
+    ask: 'The wall asks a question. Answer it in the Tongue.', h: ['1rgq4geta2m'],
+    near: { '2e6fkre8fvh': 'Yes. But the wall asked in the Tongue, and wants the Tongue back.', '205i4onybdf': 'Yes. But the wall asked in the Tongue, and wants the Tongue back.' },
+    won: 'The glass ripples like water. A key of green glass rises out of it, still humming the word you spoke.' },
+  { id: 'gallery', n: 'II', name: 'The Gallery of the Gaze', key: 'Key of Stone', lock: 'Lock of Stone', tongue: 'VORZ AKHUL', tr: 'vorz akhûl: the eye of stone',
+    color: '#a9bdd8', sig: 'M-6.5 4Q0 -2.5 6.5 4Q0 10.5 -6.5 4ZM0 1.2V6.8',
+    blurb: 'Five who looked upon the first Queen, and never looked away.',
+    flavor: 'An auditorium of stone-eyed seers. At its heart stands the first Gorgon queen, eyes open. Five figures stand frozen at her feet. Their plinths name them only in the Tongue.',
+    won: 'The Queen’s eyes close. Something cold drops from her stone lips into your palm.' },
+  { id: 'coil', n: 'III', name: 'The Counting Coil', key: 'Key of the Coil', lock: 'Lock of the Coil', tongue: 'OUROTH KRENN', tr: 'ouroth krenn: the serpent counts',
+    color: '#a477ff', sig: spiralPath(.4, 6, 2.2, 60, 0, 4),
+    blurb: 'A serpent in the floor that counts its meals.',
+    flavor: 'A spiral antechamber, carved so perfectly it seems grown. Set into the floor, a black serpent bites its own tail. Each of its twenty-four scales bears one glyph.',
+    won: 'The coil shudders and sheds a single scale into your hand. It has the shape of a key.' },
+  { id: 'liturgy', n: 'IV', name: 'The Chapel of Liturgy', key: 'Key of the Word', lock: 'Lock of the Word', tongue: 'ZHAAL KRUL', tr: 'zhaal krûl: the last speech',
+    color: '#ff2f45', sig: 'M-5 -1H5V10H-5ZM-3 2H3M-3 4.5H3M-3 7H1',
+    blurb: 'An altar whose prayers were chiselled away.',
+    flavor: 'An altar of black stone, warm to the touch. Three lines of the liturgy have been chiselled out, leaving only their meaning carved in Common. The missing words lie scattered across the floor as glyph tiles.',
+    won: 'The altar drinks the last word. Its surface splits, and inside lies a key the colour of old blood.' },
+  { id: 'ring', n: 'V', name: 'The Ring at the End', key: 'Key of the End', lock: 'Lock of the End', tongue: 'NUL KRUL', tr: 'nul krûl: the void at the end',
+    color: '#ff6a1a', sig: 'M5.6 4A5.6 5.6 0 1 1 4 .1M4 .1L7.6 -.8L6.4 2.7Z',
+    blurb: 'A ring of script that eats its own words.',
+    flavor: 'The deepest chamber before the Door. A single band of glyphs turns slowly in the floor. It has no beginning, only a small carved mouth.',
+    ask: 'Speak the name the ring asks for.', h: ['bcr8zcgd7g'],
+    near: { '1ty9r33mj2f': 'That is my name in the Tongue. The outsiders call me something else.', '1px49zd29ir': 'That is what I am. Not what they named me.' },
+    won: 'The ring stops turning. Where the mouth was, there is a key made of absence. It weighs nothing.' },
+];
+const HALL = { id: 'hall', name: 'The Hall of Glyphs', tongue: 'ZHAAL ISHKUN', tr: 'zhaal ishkûn: the tongue that coils', color: '#e0c27a' };
+// Map nodes along the spiral, outermost first.
+const NODES = [
+  { id: 'threshold', name: 'The Threshold', color: '#9d93a8', sig: 'M-5 10V2Q-5 -4 0 -5Q5 -4 5 2V10', at: 0, blurb: 'Where the light ends and the stairs begin.' },
+  { id: 'hall', name: HALL.name, color: HALL.color, glyph: 'O', at: .1, blurb: 'Every wall a page. Learn the serpent tongue here before you go deeper.' },
+  ...CH.map((c, i) => ({ id: c.id, name: c.name, color: c.color, sig: c.sig, at: [.24, .39, .54, .69, .84][i], blurb: c.blurb, ch: i })),
+  { id: 'door', name: 'The Door at the End', color: '#ff6a1a', sig: 'M0 4m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0M0 3V6', at: 1, blurb: 'Five locks. One mouth.' },
+];
+const WRONG = ['Nul. The Serpent does not know that word.', 'The stone tastes your answer and spits it out.',
+  'Something in the dark laughs without a mouth.', 'Wrong. The Coil tightens.', 'The air grows colder. Try again.'];
+const CREED = 'NUL ZARG UK SHA . OUROTH SHA OUROTH';
+const KEY_SVG = `<circle class="k" cx="-27" r="6.2"/><path d="M-27 -6.2L-23.4 -9.6L-22.2 -5.4Z" fill="currentColor"/>
+  <circle cx="-27" r="1.8" fill="currentColor"/><path class="k" d="M-20.8 0H0"/><path d="M-8 0V5.4H-6V2.6H-4V6.4H-2V0Z" fill="currentColor"/>`;
+
+/* ---------------- state ---------------- */
+const FRESH = () => ({ keys: [0, 0, 0, 0, 0], turned: [0, 0, 0, 0, 0], at: 0, trial: 0 });
+let S = FRESH();
+try { const s = JSON.parse(localStorage.getItem('thessaros2')); if (s && s.keys && s.turned) S = { ...FRESH(), ...s }; } catch {}
+const save = () => { try { localStorage.setItem('thessaros2', JSON.stringify(S)); } catch {} };
+const roomOpen = i => i === 0 || !!S.keys[i - 1];
+const nodeOpen = k => { const n = NODES[k]; return n.ch != null ? roomOpen(n.ch) : n.id === 'door' ? S.keys.every(Boolean) : true; };
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2800); }
+function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+/* ---------------- the abyss: music made live in the browser ---------------- */
+// Heartbeat, a tritone drone, whispers and a broken music box. Press M to mute.
+const Audio = (() => {
+  let ac, master, sfxBus, bus, verb, noiseBuf, st = 0, next = 0, deep = false, muted = false;
+  const BELL = [587.33, 415.3, 554.37, 392, 587.33, 369.99];
+  function init() {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 5; comp.connect(ac.destination);
+    master = ac.createGain(); master.gain.value = .6; master.connect(comp);
+    sfxBus = ac.createGain(); sfxBus.gain.value = .75; sfxBus.connect(master);
+    bus = ac.createGain(); bus.connect(master);
+    const n = ac.sampleRate * 3.4, ir = ac.createBuffer(2, n, ac.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 3; }
+    verb = ac.createConvolver(); verb.buffer = ir; verb.connect(bus);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  }
+  const G = (v, dest = bus) => { const g = ac.createGain(); g.gain.value = v; g.connect(dest); return g; };
+  const send = (node, amt) => node.connect(G(amt, verb));
+  function env(g, t, a, peak, d) { const p = g.gain; p.setValueAtTime(.0001, t); p.exponentialRampToValueAtTime(peak, t + a); p.exponentialRampToValueAtTime(.0001, t + a + d); }
+  function tone(type, f, t, dur, dest, detune = 0) { const o = ac.createOscillator(); o.type = type; o.frequency.value = f; o.detune.value = detune;
+    o.connect(dest); o.start(t); o.stop(t + dur + .1); return o; }
+  function noise(t, dur, dest) { const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true; s.connect(dest); s.start(t, Math.random() * .5); s.stop(t + dur); }
+  function filt(type, f, q, dest) { const b = ac.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; b.connect(dest); return b; }
+  function drone(freqs, level, fade) { const t = ac.currentTime, g = G(0); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level, t + fade); send(g, .3);
+    const lp = filt('lowpass', 220, 4, g), lfo = ac.createOscillator(), lg = ac.createGain();
+    lfo.frequency.value = .05 + Math.random() * .03; lg.gain.value = 140; lfo.connect(lg).connect(lp.frequency); lfo.start();
+    for (const f of freqs) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(); } }
+  function thump(t, v) { const g = G(0); env(g, t, .01, v, .35); const o = tone('sine', 70, t, .4, g); o.frequency.exponentialRampToValueAtTime(32, t + .3); }
+  function bell(t, f) { for (const [r, v] of [[1, .07], [2.76, .03], [5.4, .015], [.5, .04]]) {
+    const g = G(0); env(g, t, .004, v, 4 / r ** .3); send(g, .8); tone('sine', f * r, t, 5, g); } }
+  function pad(t, freqs, dur, v) { const g = G(0); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(v, t + dur * .4);
+    g.gain.linearRampToValueAtTime(.0001, t + dur); send(g, .6); const lp = filt('lowpass', 900, 1, g);
+    for (const f of freqs) for (const d of [-8, 8]) tone('sawtooth', f, t, dur, lp, d); }
+  function whisper(t) { const g = G(0); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.14, t + .8); g.gain.linearRampToValueAtTime(.0001, t + 2.2);
+    send(g, .7); const pan = ac.createStereoPanner(); pan.pan.value = Math.random() * 2 - 1; pan.connect(g);
+    for (const [f, q] of [[600 + Math.random() * 500, 9], [1800 + Math.random() * 900, 12]]) {
+      const b = filt('bandpass', f, q, pan); b.frequency.setValueAtTime(f, t); b.frequency.linearRampToValueAtTime(f * .6, t + 2.2); noise(t, 2.3, b); } }
+  function step(t, s) {
+    if (s % (deep ? 2 : 3) === 0) { thump(t, .9); thump(t + .27, .5); }
+    if (s % 16 === 0) pad(t, [146.83, 155.56, 220, 207.65], 9, .03);
+    if (s % (deep ? 4 : 7) === 3) bell(t, BELL[(s / 7 | 0) % BELL.length] / (deep ? 2 : 1));
+    if (s % (deep ? 6 : 11) === 5) whisper(t);
+  }
+  function tick() { while (next < ac.currentTime + .15) { step(next, st++); next += .5; } }
+  function start() { if (ac) { ac.resume(); return; } init(); drone([36.71, 36.95, 51.91], .22, 5); next = ac.currentTime + .1; setInterval(tick, 30); }
+  function awaken() { if (!ac || deep) return; deep = true; drone([73.42, 103.83, 110.3], .09, 10); }
+  function sfx(kind) {
+    if (!ac) return; const t = ac.currentTime, g = ac.createGain(); g.connect(sfxBus);
+    if (kind === 'clank') { env(g, t, .002, .7, .5); noise(t, .5, filt('bandpass', 2300, 14, g)); tone('sine', 120, t, .25, g).frequency.exponentialRampToValueAtTime(50, t + .2); }
+    if (kind === 'deny') { env(g, t, .02, .4, .6); const lp = filt('lowpass', 320, 8, g); tone('sawtooth', 55, t, .7, lp); tone('sawtooth', 58.3, t, .7, lp); }
+    if (kind === 'tick') { env(g, t, .001, .25, .08); noise(t, .1, filt('bandpass', 3200, 6, g)); }
+    if (kind === 'good') { for (const [f, d] of [[587.33, 0], [880, .09]]) { const h = ac.createGain(); h.connect(sfxBus); env(h, t + d, .005, .12, .6); tone('sine', f, t + d, .7, h); } }
+    if (kind === 'step') { env(g, t, .005, .18, .12); noise(t, .14, filt('lowpass', 260, 1, g)); }
+    if (kind === 'whoosh') { g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.25, t + .35); g.gain.linearRampToValueAtTime(.0001, t + .9);
+      const b = filt('bandpass', 300, 1.5, g); b.frequency.setValueAtTime(300, t); b.frequency.exponentialRampToValueAtTime(2400, t + .4); b.frequency.exponentialRampToValueAtTime(200, t + .9); noise(t, .95, b); }
+    if (kind === 'stone') { env(g, t, .03, .5, .9); noise(t, 1, filt('lowpass', 380, 2, g)); }
+    if (kind === 'summon') { g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.2, t + .8); g.gain.linearRampToValueAtTime(.0001, t + 1.8);
+      for (const f of [220, 330, 311]) tone('sine', f, t, 1.8, g).frequency.exponentialRampToValueAtTime(f * 4, t + 1.1); }
+    if (kind === 'boom') { env(g, t, .05, .9, 3.5); tone('sine', 48, t, 4, g).frequency.exponentialRampToValueAtTime(18, t + 3.5); noise(t, 3, filt('lowpass', 140, 1, g)); }
+  }
+  addEventListener('keydown', e => { if (ac && e.key.toLowerCase() === 'm' && !e.target.closest('input')) {
+    muted = !muted; master.gain.setTargetAtTime(muted ? 0 : .6, ac.currentTime, .2); toast(muted ? 'The abyss falls silent. (M)' : 'The abyss breathes again.'); } });
+  return { start, awaken, sfx };
+})();
+
+/* ---------------- views, routing & the void-wipe ---------------- */
+const VIEWS = {};
+let current = null;
+function route() {
+  let name = location.hash.slice(1) || 'map';
+  if (!VIEWS[name]) name = 'map';
+  if (VIEWS[name].guard && !VIEWS[name].guard()) { location.hash = '#map'; return; }
+  if (current && VIEWS[current].leave) VIEWS[current].leave();
+  $('#award').hidden = true;
+  $$('main > section').forEach(s => s.classList.toggle('on', s.dataset.view === name));
+  const idx = CH.findIndex(c => c.id === name);
+  document.documentElement.style.setProperty('--c', idx >= 0 ? CH[idx].color : name === 'hall' ? HALL.color : name === 'door' ? '#ff6a1a' : '#a477ff');
+  document.body.dataset.view = name;
+  current = name;
+  const at = NODES.findIndex(n => n.id === name); if (at > 0) { S.at = at; save(); }
+  scrollTo({ top: 0, behavior: 'instant' });
+  VIEWS[name].enter?.($(`section[data-view="${name}"]`));
+}
+let wiping = false;
+async function go(hash, x = innerWidth / 2, y = innerHeight / 2) {
+  if (wiping || location.hash === hash) return;
+  wiping = true;
+  const w = $('#wipe'); w.style.setProperty('--x', x + 'px'); w.style.setProperty('--y', y + 'px');
+  Audio.sfx('whoosh'); w.classList.add('on');
+  await wait(REDUCED ? 50 : 680);
+  location.hash = hash; await wait(60);
+  w.style.setProperty('--x', '50%'); w.style.setProperty('--y', '50%');
+  w.classList.remove('on'); await wait(500);
+  wiping = false;
+}
+// every in-page link travels through the void
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]'); if (!a || e.defaultPrevented) return;
+  e.preventDefault(); go(a.getAttribute('href'), e.clientX || innerWidth / 2, e.clientY || innerHeight / 2);
+});
+
+function renderKeyring() {
+  $('#keyring').innerHTML = CH.map((c, i) => `<span class="slot ${S.keys[i] ? 'got' : ''} ${S.turned[i] ? 'turned' : ''}" id="slot${i}"
+    style="--c:${c.color}" title="${c.key}${S.keys[i] ? '' : ' (not yet found)'}"><svg viewBox="-35 -11 37 19" aria-hidden="true">${KEY_SVG}</svg></span>`).join('');
+}
+
+/* key award, shown inside a room; on leaving, the key flies into the keyring */
+let awarding = -1;
+function award(i) {
+  if (current !== CH[i].id) { S.keys[i] = 1; save(); renderKeyring(); toast(`You claimed the ${CH[i].key}.`); return; }
+  S.keys[i] = 1; save(); awarding = i;
+  const a = $('#award'), c = CH[i];
+  a.style.setProperty('--c', c.color);
+  $('#award-key').innerHTML = KEY_SVG;
+  $('#award-name').textContent = 'The ' + c.key;
+  $('#award-text').textContent = c.won;
+  $('#award-next').textContent = i < 4 ? `The way to ${CH[i + 1].name} is open.` : 'All five keys are yours. The Door at the End is waiting.';
+  a.hidden = false; a.classList.remove('show'); void a.offsetWidth; a.classList.add('show');
+  Audio.sfx('summon'); setTimeout(() => Audio.sfx('clank'), 1300);
+  Ambient.burst(innerWidth / 2, innerHeight / 2, c.color, 120);
+  VIEWS[c.id].enter?.($(`section[data-view="${c.id}"]`));
+}
+async function closeAward(back) {
+  const a = $('#award'), i = awarding; if (a.hidden) return;
+  const from = $('#award-key').getBoundingClientRect(), slot = $('#slot' + i).getBoundingClientRect();
+  const fly = document.createElementNS(NS, 'svg');
+  fly.setAttribute('viewBox', '-37 -12 40 22'); fly.setAttribute('class', 'flykey'); fly.style.setProperty('--c', CH[i].color);
+  Object.assign(fly.style, { left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px' });
+  fly.innerHTML = KEY_SVG; document.body.append(fly);
+  a.hidden = true;
+  const dx = slot.left + slot.width / 2 - (from.left + from.width / 2), dy = slot.top + slot.height / 2 - (from.top + from.height / 2), sc = slot.width / from.width;
+  await fly.animate([{ transform: 'none' }, { transform: `translate(${dx * .4}px,${dy * .2 - 80}px) rotate(-30deg) scale(${(1 + sc) / 2})`, offset: .45 },
+    { transform: `translate(${dx}px,${dy}px) rotate(0) scale(${sc})` }], { duration: 1000, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'forwards' }).finished;
+  fly.remove(); renderKeyring(); const s = $('#slot' + i); s.classList.add('pop'); Audio.sfx('clank');
+  if (back) { await wait(250); go('#map'); }
+}
+
+function roomHead(c, i) {
+  return `<a class="backlink" href="#map">↺ The Descent</a>
+    <header class="ch-head"><p class="tag">${i != null ? 'Chamber ' + CH[i].n : 'The first stop'}</p><div class="draw">${Glyph.svg(c.tongue)}</div><p class="translit">${c.tr}</p>
+    <h2>${c.name}</h2><p class="flavor">${c.flavor || ''}</p></header>
+    ${i != null ? `<div class="claimed" hidden>You carry the ${CH[i].key}. <a href="#map">Return to the Descent.</a></div>` : ''}`;
+}
+function speakForm(i) {
+  return `<form class="speak" data-i="${i}"><label for="ans${i}">${CH[i].ask}</label>
+    <div class="speakrow"><input id="ans${i}" autocomplete="off" spellcheck="false" autocapitalize="characters"><button type="submit">Speak</button></div>
+    <p class="fb" aria-live="polite"></p></form>`;
+}
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form.speak'); if (!f) return;
+  e.preventDefault();
+  const i = +f.dataset.i, v = norm(f.querySelector('input').value); if (!v) return;
+  const h = hash(v);
+  if (CH[i].h.includes(h)) { f.querySelector('.fb').textContent = ''; award(i); return; }
+  f.querySelector('.fb').textContent = CH[i].near[h] || pick(WRONG);
+  shake(f); Audio.sfx('deny'); f.querySelector('input').select();
+});
+const markClaimed = (el, i) => { $('.claimed', el).hidden = !S.keys[i]; };
+
+/* ---------------- ambient: embers rise, ash falls ---------------- */
+const Ambient = (() => {
+  const g = $('#ambient').getContext('2d'); let W, H, run = true;
+  const motes = [], sparks = [];
+  function resize() { const d = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+    g.canvas.width = W * d; g.canvas.height = H * d; g.setTransform(d, 0, 0, d, 0, 0); }
+  const spawn = (m, any) => Object.assign(m, { x: Math.random() * W, y: any ? Math.random() * H : (m.ember ? H + 10 : -10),
+    v: 8 + Math.random() * 24, r: .5 + Math.random() * 1.6, p: Math.random() * TAU });
+  resize(); addEventListener('resize', resize);
+  for (let i = 0; i < (REDUCED ? 40 : 140); i++) motes.push(spawn({ ember: i % 3 === 0 }, true));
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (run) {
+      g.clearRect(0, 0, W, H); g.globalCompositeOperation = 'lighter';
+      const tint = getComputedStyle(document.documentElement).getPropertyValue('--c').trim() || '#a477ff';
+      for (const m of motes) {
+        m.p += dt; m.y += (m.ember ? -m.v : m.v * .5) * dt; m.x += Math.sin(m.p * .8) * 8 * dt;
+        if (m.y < -12 || m.y > H + 12) spawn(m);
+        g.globalAlpha = (m.ember ? .55 : .25) * (.6 + .4 * Math.sin(m.p * 3));
+        g.fillStyle = m.ember ? (m.r > 1.4 ? tint : '#ff7a2a') : '#b8acc4';
+        g.beginPath(); g.arc(m.x, m.y, m.r, 0, TAU); g.fill();
+      }
+      for (let i = sparks.length - 1; i >= 0; i--) { const s = sparks[i]; s.life += dt; if (s.life > s.max) { sparks.splice(i, 1); continue; }
+        s.vy += 140 * dt; s.x += s.vx * dt; s.y += s.vy * dt; g.globalAlpha = 1 - s.life / s.max; g.fillStyle = s.col;
+        g.beginPath(); g.arc(s.x, s.y, 2, 0, TAU); g.fill(); }
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  return {
+    pause(p) { run = !p; if (p) g.clearRect(0, 0, W, H); },
+    burst(x, y, col, n) { for (let i = 0; i < n; i++) { const a = Math.random() * TAU, v = 40 + Math.random() * 260;
+      sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 90, life: 0, max: .7 + Math.random() * 1.1, col }); } },
+  };
+})();
+
+/* ---------------- the map: a spiral ramp descending into the void ---------------- */
+VIEWS.map = (() => {
+  let path, total, token, lens = [], tokenLen = 0, walking = false, sel = null;
+  const SPIRAL = (() => { let d = ''; const n = 500, turns = 2.1;
+    for (let i = 0; i <= n; i++) { const q = i / n, a = -Math.PI / 2 - q * turns * TAU, r = 420 - q * 300;
+      d += (i ? 'L' : 'M') + (Math.cos(a) * r).toFixed(1) + ' ' + (Math.sin(a) * r).toFixed(1); } return d; })();
+  const sigOf = n => n.glyph ? `<g transform="scale(2.6) translate(-6 -10)"><path class="nsig" d="${Glyph.path(n.glyph)}" style="stroke-width:.9"/></g>`
+    : `<g transform="scale(3.2) translate(0 -4)"><path class="nsig" d="${n.sig}"/></g>`;
+  const LOCK_ICON = '<g class="badge" transform="translate(30 -30)"><circle r="13" fill="#0b080d" stroke="#4a4250" stroke-width="2"/><path d="M-4 0V-4A4 4 0 0 1 4 -4V0" fill="none" stroke="#8a8090" stroke-width="2"/><rect x="-6" y="-1" width="12" height="9" rx="1" fill="#8a8090"/></g>';
+  const KEY_ICON = c => `<g class="badge" transform="translate(30 -30)"><circle r="14" fill="#0b080d" stroke="${c}" stroke-width="2"/><g transform="translate(9 -1) scale(.55)" style="color:${c}">${KEY_SVG}</g></g>`;
+
+  function screenOf(len) { const p = path.getPointAtLength(len), m = $('#map').getScreenCTM(); const q = new DOMPoint(p.x, p.y).matrixTransform(m); return [q.x, q.y]; }
+  function place(len) { const p = path.getPointAtLength(len); token.setAttribute('transform', `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`); }
+  function walkTo(k) {
+    return new Promise(res => {
+      const from = tokenLen, to = lens[k], dist = Math.abs(to - from);
+      if (dist < 1) return res();
+      walking = true;
+      const dur = REDUCED ? 200 : Math.min(2800, 500 + dist * .9), t0 = performance.now(), trail = $('#trail');
+      let lastStep = 0, lastTrail = 0;
+      (function f(now) {
+        const q = Math.min(1, (now - t0) / dur), e = q < .5 ? 2 * q * q : 1 - (-2 * q + 2) ** 2 / 2;
+        tokenLen = from + (to - from) * e; place(tokenLen);
+        if (now - lastStep > 280) { lastStep = now; Audio.sfx('step'); }
+        if (now - lastTrail > 40) { lastTrail = now; const p = path.getPointAtLength(tokenLen), c = document.createElementNS(NS, 'circle');
+          c.setAttribute('class', 'trail'); c.setAttribute('cx', p.x + (Math.random() - .5) * 10); c.setAttribute('cy', p.y + (Math.random() - .5) * 10); c.setAttribute('r', 2 + Math.random() * 4);
+          trail.append(c); setTimeout(() => c.remove(), 950); }
+        if (q < 1) requestAnimationFrame(f); else { walking = false; S.at = k; save(); res(); }
+      })(performance.now());
+    });
+  }
+  function showCard(k) {
+    const n = NODES[k], card = $('#card'), open = nodeOpen(k);
+    sel = k; card.hidden = false; card.style.setProperty('--c', n.color);
+    card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+    $('#card .tag').textContent = n.ch != null ? 'Chamber ' + CH[n.ch].n : n.id === 'door' ? 'The deepest point' : n.id === 'hall' ? 'The first stop' : 'The way in';
+    $('#card h3').textContent = n.name; $('#card .blurb').textContent = n.blurb;
+    const st = $('#card .state'), btn = $('#card button');
+    btn.hidden = n.id === 'threshold';
+    if (n.ch != null) st.textContent = S.keys[n.ch] ? `${CH[n.ch].key} claimed` : open ? 'Unsolved' : `Sealed. Earn the ${CH[n.ch - 1].key} first.`;
+    else if (n.id === 'door') st.textContent = open ? (S.turned.every(Boolean) ? 'Open' : 'Your five keys will fit') : `${S.keys.filter(Boolean).length} of 5 keys found`;
+    else if (n.id === 'hall') st.textContent = S.trial ? `Trial of Glyphs: best ${S.trial} / 10` : 'Always open';
+    else st.textContent = 'Go deeper.';
+    btn.disabled = !open; btn.textContent = n.id === 'door' ? 'Approach the Door' : 'Enter';
+  }
+  async function select(k) {
+    if (walking) return;
+    if (!nodeOpen(k)) { Audio.sfx('deny'); shake($('#node' + k)); showCard(k); return; }
+    $('#card').hidden = true;
+    $$('.node').forEach(n => n.classList.remove('here'));
+    await walkTo(k);
+    $('#node' + k).classList.add('here');
+    showCard(k);
+  }
+  function refresh() {
+    NODES.forEach((n, k) => { const el = $('#node' + k), open = nodeOpen(k), solved = n.ch != null && S.keys[n.ch];
+      el.classList.toggle('locked', !open); el.classList.toggle('open', open && !solved && n.id !== 'threshold'); el.classList.toggle('solved', !!solved);
+      $('.badge', el)?.remove(); if (!open) el.insertAdjacentHTML('beforeend', LOCK_ICON); else if (solved) el.insertAdjacentHTML('beforeend', KEY_ICON(n.color)); });
+    let far = 0; NODES.forEach((n, k) => { if (nodeOpen(k)) far = k; });
+    $('#rampGlow').style.strokeDashoffset = total - lens[far];
+    const found = S.keys.filter(Boolean).length;
+    $('.maphud .prog').innerHTML = `${found} / 5 keys<br><span style="font-weight:500">${S.turned.every(Boolean) ? 'The door is open' : found === 5 ? 'The door awaits' : 'Descend'}</span>`;
+  }
+  return {
+    build(el) {
+      el.innerHTML = `<div class="maphud"><div class="logo">Thessaros<small>The Descent into the Coil</small></div><div class="prog"></div></div>
+        <svg id="map" viewBox="-500 -500 1000 1000" aria-label="Map of the Descent">
+          <defs>
+            <radialGradient id="deep"><stop offset="0" stop-color="#000"/><stop offset=".35" stop-color="#05020a"/><stop offset=".8" stop-color="#140b1c"/><stop offset="1" stop-color="#140b1c" stop-opacity="0"/></radialGradient>
+            <radialGradient id="dark"><stop offset="0" stop-color="#000" stop-opacity=".9"/><stop offset=".45" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+            <linearGradient id="rampG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a3240"/><stop offset=".5" stop-color="#231c28"/><stop offset="1" stop-color="#15101a"/></linearGradient>
+            <radialGradient id="medal" cx=".4" cy=".35"><stop offset="0" stop-color="#4a414d"/><stop offset="1" stop-color="#120e14"/></radialGradient>
+            <radialGradient id="tok"><stop offset="0" stop-color="#fff3c4"/><stop offset=".25" stop-color="#ffb347" stop-opacity=".9"/><stop offset="1" stop-color="#ff6a1a" stop-opacity="0"/></radialGradient>
+            <radialGradient id="voidG"><stop offset="0" stop-color="#000"/><stop offset=".6" stop-color="#07020d"/><stop offset="1" stop-color="#5a2a9a" stop-opacity=".5"/></radialGradient>
+            <filter id="mglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <circle r="500" fill="url(#deep)"/>
+          <g class="spin-slow" fill="none" stroke="#a477ff" stroke-width="1.1" stroke-linecap="round" opacity=".28">${Glyph.ring('NUL ZARG UK SHA . OUROTH SHA OUROTH . GHAZ UK DURN SHA . KRUL . ', 478, 16)}</g>
+          <path class="ramp-edge" d="${SPIRAL}"/><path class="ramp" d="${SPIRAL}"/><path class="ramp-steps" d="${SPIRAL}"/>
+          <path id="rampGlow" class="ramp-glow" d="${SPIRAL}"/>
+          <circle r="440" fill="url(#dark)" pointer-events="none"/>
+          <circle r="95" fill="url(#voidG)"/>
+          <g class="spin-rev" fill="none" stroke="#ff6a1a" stroke-width="1" stroke-linecap="round" opacity=".5">${Glyph.ring('KRUL . KRUL . KRUL . ', 74, 10)}</g>
+          <g id="trail"></g>
+          <g id="nodes"></g>
+          <g id="token"><circle r="34" fill="url(#tok)"/><path class="flame" d="M0 -16Q7 -6 5 2Q3 8 0 8Q-3 8 -5 2Q-7 -6 0 -16Z" fill="#ffe7a0"/><circle r="4" cy="2" fill="#fff"/></g>
+        </svg>
+        <div id="card" hidden><p class="tag"></p><h3></h3><p class="blurb"></p><p class="state"></p><button type="button">Enter</button></div>`;
+    },
+    init(el) {
+      path = $('#rampGlow', el); total = path.getTotalLength();
+      path.style.strokeDasharray = total; path.style.strokeDashoffset = total;
+      lens = NODES.map(n => n.at * total);
+      $('#nodes', el).innerHTML = NODES.map((n, k) => { const p = n.id === 'door' ? { x: 0, y: 0 } : path.getPointAtLength(lens[k]), big = n.id === 'door' ? 1.6 : 1;
+        return `<g class="node" id="node${k}" style="--c:${n.color}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) scale(${big})" tabindex="0" role="button" aria-label="${n.name}">
+          <circle class="halo" r="54"/><circle class="disc" r="38"/><circle class="ring" r="38"/>${sigOf(n)}
+          <text class="lbl" y="${n.id === 'door' ? 62 : 66}" style="${n.id === 'door' ? 'font-size:15px' : ''}">${n.name.replace('The ', '')}</text></g>`; }).join('');
+      token = $('#token', el);
+      $('#nodes', el).addEventListener('click', e => { const n = e.target.closest('.node'); if (n) select(+n.id.slice(4)); });
+      $('#nodes', el).addEventListener('keydown', e => { const n = e.target.closest('.node'); if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(+n.id.slice(4)); } });
+      $('#card button', el).onclick = e => { if (sel == null || walking) return; const [x, y] = screenOf(lens[sel]); go('#' + NODES[sel].id, x, y); };
+    },
+    enter(el) {
+      if (!lens.length) this.init(el);
+      tokenLen = lens[S.at] || 0; place(tokenLen); refresh();
+      $$('.node').forEach(n => n.classList.remove('here')); $('#node' + S.at).classList.add('here');
+      $('#card').hidden = true; if (S.at) setTimeout(() => current === 'map' && showCard(S.at), 500);
+    },
+    refresh,
+  };
+})();
+
+/* ---------------- dev panel: add ?dev to the URL ---------------- */
+function devPanel() {
+  const d = document.createElement('div'); d.id = 'dev';
+  d.innerHTML = `<b>DEV</b><button data-a="keys">All keys</button><button data-a="turn">All keys + door</button><button data-a="trial">Max trial</button><button data-a="reset">Reset all</button>`;
+  d.onclick = e => { const a = e.target.dataset.a; if (!a) return;
+    if (a === 'keys') { S.keys = [1, 1, 1, 1, 1]; S.at = 7; }
+    if (a === 'turn') { S.keys = [1, 1, 1, 1, 1]; S.turned = [1, 1, 1, 1, 1]; S.at = 7; }
+    if (a === 'trial') S.trial = 10;
+    if (a === 'reset') S = FRESH();
+    save(); location.hash = a === 'turn' ? '#sanctum' : '#map'; location.reload(); };
+  document.body.append(d);
+}
+
+/* ---------------- boot ---------------- */
+addEventListener('DOMContentLoaded', () => {
+  $('#threshold .creed').innerHTML = Glyph.svg(CREED);
+  for (const [name, v] of Object.entries(VIEWS)) v.build?.($(`section[data-view="${name}"]`));
+  renderKeyring();
+  $('#award-back').onclick = () => closeAward(true);
+  $('#award-stay').onclick = () => closeAward(false);
+  if (/[?&]dev\b/.test(location.search)) devPanel();
+  $('#enter').onclick = () => { Audio.start(); $('#threshold').classList.add('gone'); };
+  addEventListener('hashchange', route);
+  route();
+});
+
+
+================file name: glyphs.js
+Description: Nul-Ouroth serpent script: builds the SVG glyph for each letter.
+
+// Nul-Ouroth, the serpent script of Thessaros.
+// Every letter is a small serpent: a head plus 0-4 barbs across its body.
+// Vowels wear the Eye (A=0 barbs .. U=4). Consonants run in alphabetical order
+// through five heads, five barb counts each: hook-left B C D F G, hook-right H J K L M,
+// fang N P Q R S, crown T V W X Y, bar Z.
+const Glyph = (() => {
+  const VOW = 'AEIOU', CON = 'BCDFGHJKLMNPQRSTVWXYZ';
+  const HEADS = {
+    eye:   'M6 5V4.4M3.8 3Q6 0.2 8.2 3Q6 5.8 3.8 3ZM6 1.9V4.1',
+    hookL: 'M6 5V2.2Q6 .5 4.3 .8Q2.8 1.2 3.3 3.1',
+    hookR: 'M6 5V2.2Q6 .5 7.7 .8Q9.2 1.2 8.7 3.1',
+    fang:  'M6 5L3.1 .8M6 5L8.9 .8',
+    crown: 'M6 5V3.9M2.9 .9L4.5 3.9L6 1.5L7.5 3.9L9.1 .9',
+    bar:   'M6 5V2.8M2.4 2.8H9.6',
+  };
+  const ORDER = ['hookL', 'hookR', 'fang', 'crown', 'bar'];
+  const STEM = 'M6 5C8.6 7.4 3.4 9.8 6 12.4S8.2 16.6 5.4 18.6';
+  const BARB_Y = [7.6, 9.8, 12, 14.2];
+  const DOT = 'M6 14.4L7.5 16L6 17.6L4.5 16Z';
+
+  function path(ch) {
+    ch = ch.toUpperCase();
+    const v = VOW.indexOf(ch), c = CON.indexOf(ch);
+    let head, n;
+    if (v >= 0) { head = 'eye'; n = v; }
+    else if (c >= 0) { head = ORDER[c / 5 | 0]; n = c % 5; }
+    else if ('.,:;!?'.includes(ch)) return DOT;
+    else return null;
+    let d = HEADS[head] + STEM;
+    for (let i = 0; i < n; i++) d += `M3.5 ${BARB_Y[i] + 1.2}L8.5 ${BARB_Y[i] - 1.2}`;
+    return d;
+  }
+
+  const adv = ch => ch === ' ' ? 7 : path(ch) === DOT ? 8 : path(ch) ? 11 : 0;
+
+  // Inline SVG of a line of text, 20 units tall.
+  function svg(text, cls = 'glyphs') {
+    let x = 0, out = '';
+    for (const ch of text) {
+      const d = path(ch);
+      if (d) out += `<path transform="translate(${x} 0)" d="${d}"/>`;
+      x += adv(ch);
+    }
+    return `<svg class="${cls}" viewBox="-1 -1 ${x + 1} 22" role="img" aria-label="serpent script">${out}</svg>`;
+  }
+
+  // Glyphs spaced evenly around a circle at (0,0), tops facing outward, clockwise from 12 o'clock.
+  function ring(text, r, size, start = 0) {
+    const chars = [...text], k = size / 20, step = 360 / chars.length;
+    return chars.map((ch, i) => {
+      const d = path(ch);
+      return d ? `<path transform="rotate(${start + i * step}) translate(0 ${-r}) scale(${k}) translate(-6 -10)" d="${d}"/>` : '';
+    }).join('');
+  }
+
+  return { path, svg, ring };
+})();
+
+
+================file name: rooms.js
+Description: The rooms of the Descent: the Hall of Glyphs and the five key chambers.
+
+// The rooms of the Descent: the Hall of Glyphs and the five key chambers.
+const ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const gsvg = ch => `<svg viewBox="-1 -1 13 21" class="glyphs"><path d="${Glyph.path(ch)}"/></svg>`;
+
+/* ---------------- the Hall of Glyphs ---------------- */
+const LEX = [['NUL', 'nul', 'void, nothing, the abyss'], ['OUROTH', 'ouroth', 'serpent, coil, the Serpent'], ['ZARG', 'zarg', 'god'],
+  ['ZARGUK', 'zarg-ûk', 'all gods'], ['GHAZ', 'ghaz', 'key; also scale'], ['GHAZUK', 'ghaz-ûk', 'all keys, every key'],
+  ['SHA', 'shâ', 'devours, eats, ends'], ['GHUL', 'ghûl', 'opens'], ['KRENN', 'krenn', 'counts, reckons'],
+  ['AKH', 'akh', 'eye'], ['ISHKRA', 'ishkra', 'blood'], ['VORZ', 'vorz', 'stone'], ['MUL', 'mûl', 'mask, a face that is not yours'],
+  ['KRUL', 'krûl', 'the end, the last'], ['DURN', 'dûrn', 'door; also mouth'], ['SKETH', 'sketh', 'flesh'], ['ZHAAL', 'zhaal', 'tongue, speech']];
+const HEADS = [['Eye: the vowels', 'AEIOU'], ['Hook, left', 'BCDFG'], ['Hook, right', 'HJKLM'], ['Fangs', 'NPQRS'], ['Crown', 'TVWXY'], ['Bar', 'Z']];
+
+VIEWS.hall = {
+  build(el) {
+    el.innerHTML = roomHead({ ...HALL, flavor: 'A long hall where every wall is a page. The Gorgons carved their alphabet here so the faithful could learn to read the Serpent. Study it well. Every chamber below speaks this tongue.' }) + `
+      <div class="wrap">
+        <div class="tabs" role="tablist">${['Codex', 'Lexicon', 'Slate', 'Trial'].map((t, i) => `<button role="tab" data-t="${i}" aria-selected="${!i}">${t}</button>`).join('')}</div>
+        <div class="tabpanel panel" data-p="0"><h3>The Serpent Alphabet</h3>
+          <p>Every letter is a small serpent: a <b>head</b> and a <b>body</b>. The head names the family. The <b>barbs</b> across the body count from none to four. Vowels wear the <b>Eye</b>, for the Serpent watches with five. Consonants march in order through the other heads, five to a family, and the lonely Z bears the bar.</p>
+          <table class="heads"><tr><th></th>${[0, 1, 2, 3, 4].map(n => `<th>${n} barb${n === 1 ? '' : 's'}</th>`).join('')}</tr>
+            ${HEADS.map(([h, ls]) => `<tr><th>${h}</th>${[0, 1, 2, 3, 4].map(n => `<td>${ls[n] ? Glyph.svg(ls[n]) + ls[n] : ''}</td>`).join('')}</tr>`).join('')}</table>
+          <p class="etched">Full stops are a small diamond. Spaces are only silence.</p></div>
+        <div class="tabpanel panel" data-p="1" hidden><h3>Lexicon of Nul-Ouroth</h3>
+          <p class="flavor">Spoken low and harsh. <b>û</b> a long “oo”, <b>â</b> an open “ah”, <b>zh</b> as in <i>measure</i>, <b>kh</b> from the back of the throat. Written without the marks.</p>
+          <div class="rule"><b>The Law of the Tongue.</b> The one who acts comes first, then what is acted upon, and the deed comes last, as the end always does.<br>
+            <i>Nul zarg-ûk shâ</i>: the void, all gods, devours. “The void devours all gods.”<br>
+            Only the creed breaks the law: <i>Ouroth shâ Ouroth</i> reads the same from either end, because it is a circle.</div>
+          <div class="lex">${LEX.map(([g, w, m]) => `<div>${Glyph.svg(g)}<b>${w}</b> <span>${m}</span></div>`).join('')}</div></div>
+        <div class="tabpanel panel slate" data-p="2" hidden><h3>The Scribe’s Slate</h3><p>Write in Common and the slate answers in the Serpent’s hand.</p>
+          <input id="slate" placeholder="Write here…" autocomplete="off"><div class="out" id="slateout"></div></div>
+        <div class="tabpanel panel trial" data-p="3" hidden><h3>The Trial of Glyphs</h3>
+          <div id="trialIntro"><p>Ten glyphs will rise from the wall. Name each before its light fades. Three mistakes and the Serpent bites.</p>
+            <p class="etched" id="best"></p><button type="button" id="trialGo">Begin the Trial</button></div>
+          <div id="trialGame" hidden><div class="hud"><span id="tRound"></span><span id="tScore"></span><span class="lives" id="tLives"></span></div>
+            <div class="big" id="tGlyph"></div><div class="timer"><i id="tBar"></i></div><div class="opts" id="tOpts"></div></div>
+          <p class="fb" id="tFb"></p></div>
+      </div>`;
+    const tabs = $$('[role="tab"]', el), panels = $$('.tabpanel', el);
+    tabs.forEach(t => t.onclick = () => { tabs.forEach(x => x.setAttribute('aria-selected', x === t)); panels.forEach(p => p.hidden = p.dataset.p !== t.dataset.t); Audio.sfx('tick');
+      const p = panels[+t.dataset.t]; p.style.animation = 'none'; void p.offsetWidth; p.style.animation = ''; });
+    const slate = $('#slate', el), out = $('#slateout', el);
+    slate.oninput = () => { out.innerHTML = slate.value.toUpperCase().split(/\s+/).filter(Boolean).map(w => `<div class="draw">${Glyph.svg(w)}</div>`).join(''); };
+
+    // the trial: 10 glyphs, 4 choices, 3 lives, a fading light
+    let round, score, lives, answer, timer;
+    const family = l => HEADS.find(h => h[1].includes(l))[1];
+    const end = () => { $('#trialGame', el).hidden = true; $('#trialIntro', el).hidden = false;
+      S.trial = Math.max(S.trial, score); save(); paintBest();
+      $('#tFb', el).className = 'fb' + (score === 10 ? ' good' : '');
+      $('#tFb', el).textContent = score === 10 ? 'Ten of ten. The wall bows to you. You are glyph-sworn.' : lives ? `${score} of 10. The wall is patient.` : `The Serpent bites. ${score} of 10.`; };
+    const choose = (b, l) => {
+      clearTimeout(timer); $$('#tOpts button', el).forEach(x => { x.disabled = true; if (x.dataset.l === answer) x.classList.add('right'); });
+      if (l === answer) { score++; Audio.sfx('good'); } else { lives--; if (b) b.classList.add('wrong'); Audio.sfx('deny'); shake($('#tGlyph', el)); }
+      round++; setTimeout(nextRound, 750);
+    };
+    const nextRound = () => {
+      if (round === 10 || !lives) return end();
+      answer = pick([...ABC]);
+      const fam = [...family(answer)].filter(c => c !== answer), opts = new Set([answer]);
+      while (opts.size < 4) opts.add(fam.length && Math.random() < .6 ? pick(fam) : pick([...ABC]));
+      $('#tRound', el).textContent = `Glyph ${round + 1} / 10`; $('#tScore', el).textContent = `${score} named`; $('#tLives', el).textContent = '◆'.repeat(lives) + '◇'.repeat(3 - lives);
+      $('#tGlyph', el).innerHTML = `<div class="draw">${Glyph.svg(answer)}</div>`;
+      $('#tOpts', el).innerHTML = [...opts].sort(() => Math.random() - .5).map(l => `<button type="button" data-l="${l}">${l}</button>`).join('');
+      const bar = $('#tBar', el), secs = Math.max(3, 7 - round * .35);
+      bar.classList.remove('run'); void bar.offsetWidth; bar.style.animationDuration = secs + 's'; bar.classList.add('run');
+      timer = setTimeout(() => choose(null, ''), secs * 1000);
+    };
+    $('#tOpts', el).addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.disabled) choose(b, b.dataset.l); });
+    $('#trialGo', el).onclick = () => { round = 0; score = 0; lives = 3; $('#tFb', el).textContent = ''; $('#trialIntro', el).hidden = true; $('#trialGame', el).hidden = false; nextRound(); };
+    const paintBest = () => { $('#best', el).textContent = S.trial ? `Your best: ${S.trial} of 10` : ''; };
+    paintBest();
+    this.stop = () => clearTimeout(timer);
+  },
+  leave() { this.stop?.(); },
+};
+
+/* ---------------- I. The Speaking Wall: the coil cipher ---------------- */
+// The inscription is written seven letters on. Turning the dial back reads it.
+const WALL_ENC = 'ILMVYL AOL NVKZ AOLYL DHZ VUSF AOL CVPK. ZWLHR PAZ UHTL PU AOL AVUNBL VM AOL JVPS.';
+VIEWS.wall = {
+  build(el) {
+    let k = 0;
+    const step = 360 / 26;
+    const inner = [...ABC].map((ch, i) => `<path transform="rotate(${i * step}) translate(0 -128) scale(1.15) translate(-6 -10)" d="${Glyph.path(ch)}"/>`).join('');
+    const outer = [...ABC].map((ch, i) => { const a = (i * step - 90) * Math.PI / 180;
+      return `<text class="lat" x="${(Math.cos(a) * 172).toFixed(1)}" y="${(Math.sin(a) * 172 + 5).toFixed(1)}">${ch}</text>`; }).join('');
+    el.innerHTML = roomHead(CH[0], 0) + `
+      <div class="panel"><p class="tag">The inscription</p><br>
+        <div class="inscr" id="inscr">${WALL_ENC.split(' ').map(w => `<span class="word">${[...w].map(ch => ABC.includes(ch)
+          ? `<span class="gcell" data-c="${ABC.indexOf(ch)}">${gsvg(ch)}<b></b></span>` : `<span class="gdot">${gsvg(ch)}</span>`).join('')}</span>`).join('')}</div>
+        <div class="dial" id="dial"><svg viewBox="-205 -205 410 410" aria-label="the serpent dial">
+          <circle r="196" fill="#120d12" stroke="#000" stroke-width="3"/><circle r="152" fill="#0b080d" stroke="#ffffff14"/>
+          <circle r="104" fill="#060407" stroke="#ffffff10"/>${outer}
+          <path d="M-8 -198L0 -184L8 -198Z" fill="#3fd8a4"/>
+          <g class="inner" id="dinner"><g fill="none" stroke="#3fd8a4" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${inner}</g>
+            <g transform="translate(0 -96)"><path d="M14 -7L-12 0L14 7Q8 0 14 -7Z" fill="#2a1f2c" stroke="#3fd8a4"/><circle cx="2" cy="-2" r="1.6" fill="#ff3b12"/></g></g>
+          <text y="6" text-anchor="middle" font-family="Cinzel" font-size="12" fill="#6f6458" letter-spacing="3">TURN THE COIL</text></svg></div>
+        <div class="ctrls"><button type="button" id="dl">◀ Turn back</button><button type="button" id="dr">Turn on ▶</button></div>
+        <p class="etched">Scratched beneath the dial in the Tongue:</p><div style="color:var(--c);max-width:340px;margin:0 auto">${Glyph.svg('IT HAS SWALLOWED SEVEN')}</div>
+        <p class="fb" id="wfb"></p></div>
+      ${speakForm(0)}`;
+    const cells = $$('.gcell', el), inscr = $('#inscr', el), dinner = $('#dinner', el), dial = $('#dial', el);
+    const paint = () => {
+      dinner.style.transform = `rotate(${-k * step}deg)`;
+      const kk = ((k % 26) + 26) % 26;
+      cells.forEach(c => $('b', c).textContent = ABC[(+c.dataset.c - kk + 26) % 26]);
+      const clear = kk === 7; inscr.classList.toggle('clear', clear);
+      if (clear && !paint.was) { Audio.sfx('stone'); $('#wfb', el).className = 'fb good'; $('#wfb', el).textContent = 'The wall speaks clearly now. It is asking you something.'; }
+      if (!clear) $('#wfb', el).textContent = '';
+      paint.was = clear;
+    };
+    const turn = d => { k += d; Audio.sfx('tick'); paint(); };
+    $('#dl', el).onclick = () => turn(-1); $('#dr', el).onclick = () => turn(1);
+    // drag the inner ring like a real dial
+    let drag = null;
+    const ang = e => { const r = dial.getBoundingClientRect(); return Math.atan2(e.clientY - r.top - r.height / 2, e.clientX - r.left - r.width / 2) * 180 / Math.PI; };
+    dial.addEventListener('pointerdown', e => { drag = { a: ang(e), k }; dial.setPointerCapture(e.pointerId); dial.classList.add('dragging'); });
+    dial.addEventListener('pointermove', e => { if (!drag) return; let d = ang(e) - drag.a; d = ((d + 540) % 360) - 180;
+      const nk = drag.k - Math.round(d / step); if (nk !== k) { k = nk; Audio.sfx('tick'); paint(); } });
+    const stop = () => { drag = null; dial.classList.remove('dragging'); };
+    dial.addEventListener('pointerup', stop); dial.addEventListener('pointercancel', stop);
+    paint();
+  },
+  enter(el) { markClaimed(el, 0); },
+};
+
+/* ---------------- II. The Gallery of the Gaze: read the names, order the fallen ---------------- */
+const FIG = {
+  base: '<circle class="fig" cx="30" cy="16" r="8"/><path class="fig" d="M17 30Q30 23 43 30L47 88H13Z"/>',
+  VAEL: '<path class="figline" d="M42 34L54 16"/><path class="figline" d="M51 12L57 20"/>',
+  ESK: '<path class="figline" d="M24 46L30 38L36 46"/><path class="figline" d="M30 38V50"/>',
+  NYRA: '<path class="figline" d="M42 36L58 30"/><circle cx="59" cy="29" r="2.6" fill="#8f8790"/>',
+  ORRIN: '<path class="figline" d="M18 36L3 25"/><ellipse cx="30" cy="20" rx="2.4" ry="3" fill="#0a080b"/>',
+  MOUR: '<path class="figline" d="M48 6V88"/><path d="M45 12L48 2L51 12Z" fill="#8f8790"/>',
+};
+const STATUES = [['NYRA', 'THIEF'], ['MOUR', 'GUARD'], ['VAEL', 'MASON'], ['ORRIN', 'SCHOLAR'], ['ESK', 'PRIESTESS']];
+const QUEEN = `<svg viewBox="0 0 200 170" aria-hidden="true"><defs><linearGradient id="qs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d5660"/><stop offset="1" stop-color="#1a161b"/></linearGradient></defs>
+  <g fill="none" stroke="#3b353d" stroke-width="5" stroke-linecap="round">${[[-1, 0], [1, 0], [-1, 1], [1, 1], [-1, 2], [1, 2], [0, 3]].map(([s, k]) =>
+    `<path d="M${100 + s * (14 + k * 6)} ${52 - k * 4}Q${100 + s * (40 + k * 14)} ${30 - k * 12} ${100 + s * (30 + k * 20)} ${8 + k * 2}Q${100 + s * (24 + k * 22)} ${-2 + k * 4} ${100 + s * (36 + k * 22)} ${2 + k * 6}"/><ellipse cx="${100 + s * (37 + k * 22)}" cy="${3 + k * 6}" rx="5" ry="3.4" fill="#3b353d" stroke="none"/><circle cx="${100 + s * (39 + k * 22)}" cy="${2 + k * 6}" r="1" fill="#ff3b12" stroke="none"/>`).join('')}</g>
+  <path d="M100 30C76 30 68 52 70 72C72 98 86 112 100 112C114 112 128 98 130 72C132 52 124 30 100 30Z" fill="url(#qs)" stroke="#0a080b" stroke-width="2"/>
+  <path d="M60 170Q64 124 100 118Q136 124 140 170Z" fill="url(#qs)" stroke="#0a080b" stroke-width="2"/>
+  <path class="qeye" d="M78 68Q87 60 96 68Q87 74 78 68Z"/><path class="qeye" d="M104 68Q113 60 122 68Q113 74 104 68Z"/>
+  <path d="M87 63V73M113 63V73" stroke="#0a080b" stroke-width="1.6"/><path d="M74 62L96 66M126 62L104 66" stroke="#0a080b" stroke-width="3" stroke-linecap="round"/>
+  <path d="M88 94Q100 90 112 94Q100 104 88 94Z" fill="#0a080b"/><path d="M93 94L95 101L97 94M103 94L105 101L107 94" fill="#d8cfba"/>
+  <path d="M92 40L100 50L108 40" fill="none" stroke="#0a080b" stroke-width="1.5"/></svg>`;
+
+VIEWS.gallery = {
+  build(el) {
+    el.innerHTML = roomHead(CH[1], 1) + `
+      <div class="queen" id="queen">${QUEEN}</div>
+      <p class="etched">Carved above the Queen: “She remembers the order in which she fed.”</p>
+      <div class="plinths" id="plinths">${['First', 'Second', 'Third', 'Fourth', 'Last'].map(o => `<div class="plinth"><span>${o}</span><div class="pg"></div></div>`).join('')}</div>
+      <div class="ctrls"><button type="button" id="g-undo">Undo</button><button type="button" id="g-clear">Clear</button></div>
+      <p class="etched">Touch the fallen in the order the Gaze took them. Their names and callings are carved in the Tongue.</p>
+      <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="stoneFig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#77707a"/><stop offset="1" stop-color="#29242b"/></linearGradient></defs></svg>
+      <div class="statues" id="statues">${STATUES.map(([n, r], i) => `<button type="button" class="statue" data-i="${i}" aria-label="statue ${i + 1}">
+        <svg class="fig-svg" viewBox="0 0 60 92" aria-hidden="true">${n === 'ESK' ? FIG.base.replace('cy="16"', 'cy="30"').replace('M17 30Q30 23 43 30L47 88H13Z', 'M15 46Q30 38 45 46L50 88H10Z') : FIG.base}${FIG[n]}</svg>
+        ${Glyph.svg(n)}<div class="role">${Glyph.svg(r)}</div></button>`).join('')}</div>
+      <p class="fb" id="gfb"></p>
+      <div class="panel"><h3>The Testimony of the Floor</h3><ol class="clues">
+        <li>The mason was the first to look upon her. His work was never finished.</li>
+        <li>The guard was taken last, still facing the door he swore to hold.</li>
+        <li>The thief was neither the first to fall nor the last.</li>
+        <li>The scholar turned to stone the very moment after the thief. He had looked up to shout a warning.</li>
+        <li>The priestess did not outlive the scholar. She was deep in prayer before his warning ever came.</li></ol></div>`;
+    let order = [];
+    const queen = $('#queen', el), plinths = $$('.plinth', el), cards = $$('.statue', el);
+    const paint = (reveal) => {
+      plinths.forEach((p, k) => { const s = STATUES[order[k]]; $('.pg', p).innerHTML = s ? Glyph.svg(s[0]) + (reveal ? `<b>${s[0][0]}</b>` : '') : ''; });
+      cards.forEach((c, i) => c.classList.toggle('placed', order.includes(i)));
+    };
+    $('#statues', el).addEventListener('click', e => {
+      const c = e.target.closest('.statue'); if (!c || order.length >= 5 || S.keys[1]) return;
+      const i = +c.dataset.i; if (order.includes(i)) return;
+      order.push(i); Audio.sfx('stone'); paint();
+      if (order.length < 5) return;
+      if (hash(order.map(k => STATUES[k][0][0]).join('')) === 'cf24avootd') {
+        queen.classList.add('fed'); paint(true); Audio.sfx('good'); $('#gfb', el).className = 'fb good'; $('#gfb', el).textContent = 'Their first letters burn: the Gaze remembers.';
+        setTimeout(() => award(1), 1600);
+      } else {
+        queen.classList.add('angry'); shake($('#plinths', el)); Audio.sfx('deny');
+        $('#gfb', el).className = 'fb'; $('#gfb', el).textContent = 'The Gaze does not remember it so. The figures grind back to where they stood.';
+        setTimeout(() => { queen.classList.remove('angry'); order = []; paint(); }, 1500);
+      }
+    });
+    $('#g-undo', el).onclick = () => { if (!S.keys[1]) { order.pop(); paint(); } };
+    $('#g-clear', el).onclick = () => { if (!S.keys[1]) { order = []; paint(); } };
+    this.solve = () => { order = [2, 4, 0, 3, 1]; queen.classList.add('fed'); paint(true); };
+  },
+  enter(el) { markClaimed(el, 1); if (S.keys[1]) this.solve(); },
+};
+
+/* ---------------- III. The Counting Coil: trace the hunger ---------------- */
+const COIL = 'DEVNOULUORURROTHSHAZEARG';
+const coilXY = i => { const a = (-90 + i * 15) * Math.PI / 180; return [Math.cos(a) * 150, Math.sin(a) * 150]; };
+VIEWS.coil = {
+  build(el) {
+    const head = `<g transform="translate(0 -196) scale(.72)">
+      <path d="M34 -20Q0 -40 -40 -14Q-56 -6 -58 0Q-56 6 -40 14Q0 40 34 20Z" fill="#120c10" stroke="#000" stroke-width="2"/>
+      <path d="M-44 -6L-60 -2M-44 6L-60 2" stroke="#e9dfc8" stroke-width="3" stroke-linecap="round"/>
+      <path d="M30 -18Q50 -36 72 -40M30 18Q50 36 72 40M34 -10Q60 -18 80 -14M34 10Q60 18 80 14" fill="none" stroke="#5c5048" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="-8" cy="-14" rx="9" ry="4.5" fill="#ff3b12"/><ellipse cx="-8" cy="-14" rx="1.4" ry="4" fill="#000"/>
+      <ellipse cx="-8" cy="14" rx="9" ry="4.5" fill="#ff3b12"/><ellipse cx="-8" cy="14" rx="1.4" ry="4" fill="#000"/></g>`;
+    const scales = [...COIL].map((ch, i) => { const [x, y] = coilXY(i), [bx, by] = coilXY(i).map(v => v * 1.27);
+      return `<g class="scale" data-i="${i}" tabindex="0" role="button" aria-label="scale ${i + 1}">
+        <g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${i * 15})"><path class="sc" d="M-15 -16Q0 -26 15 -16L13 14Q0 24 -13 14Z"/>
+          <path class="sg" transform="scale(1.15) translate(-6 -10)" d="${Glyph.path(ch)}"/></g>
+        <text class="badge" x="${bx.toFixed(1)}" y="${(by + 4).toFixed(1)}" text-anchor="middle"></text></g>`; }).join('');
+    el.innerHTML = roomHead(CH[2], 2) + `
+      <p class="etched" style="font-size:1.2rem"><b>“It eats once. It eats once more. After that, each hunger is the sum of the two before it.<br>
+        Begin beneath the eye, and follow the body toward the tail. What it does is eight scales long.”</b></p>
+      <div class="coilwrap" id="coilwrap"><svg viewBox="-215 -232 430 447">
+        <circle r="150" fill="none" stroke="#1a1316" stroke-width="48"/><circle r="126" fill="none" stroke="#ffffff10"/><circle r="174" fill="none" stroke="#ffffff10"/>
+        <polyline id="cpath"/>${scales}${head}
+        <text y="6" text-anchor="middle" font-family="Cinzel" font-size="13" fill="#6f6458" letter-spacing="4">OUROTH KRENN</text></svg></div>
+      <div class="picks" id="picks">${'<span></span>'.repeat(8)}</div>
+      <div class="ctrls"><button type="button" id="c-undo">Undo</button><button type="button" id="c-clear">Clear</button></div>
+      <p class="fb" id="cfb"></p>`;
+    let picks = [];
+    const wrap = $('#coilwrap', el), sc = $$('.scale', el);
+    const paint = () => {
+      sc.forEach((g, i) => { const k = picks.indexOf(i); g.classList.toggle('sel', k >= 0); $('.badge', g).textContent = k >= 0 ? k + 1 : ''; });
+      $('#cpath', el).setAttribute('points', picks.map(i => coilXY(i).map(v => (v * .7).toFixed(1)).join(',')).join(' '));
+      $$('#picks span', el).forEach((s, k) => s.innerHTML = picks[k] != null ? Glyph.svg(COIL[picks[k]]) : '');
+    };
+    const tap = i => {
+      if (S.keys[2] || picks.includes(i) || picks.length >= 8) return;
+      picks.push(i); Audio.sfx('tick'); paint();
+      if (picks.length < 8) return;
+      if (hash(picks.map(k => COIL[k]).join('')) === '1visnlviwlw') { wrap.classList.add('solved'); Audio.sfx('good'); setTimeout(() => award(2), 1000); }
+      else { Audio.sfx('deny'); shake(wrap); $('#cfb', el).textContent = 'The Coil hisses. That is not how it counts.'; setTimeout(() => { picks = []; paint(); $('#cfb', el).textContent = ''; }, 1400); }
+    };
+    wrap.addEventListener('click', e => { const g = e.target.closest('.scale'); if (g) tap(+g.dataset.i); });
+    wrap.addEventListener('keydown', e => { const g = e.target.closest('.scale'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tap(+g.dataset.i); } });
+    $('#c-undo', el).onclick = () => { if (!S.keys[2]) { picks.pop(); paint(); } };
+    $('#c-clear', el).onclick = () => { if (!S.keys[2]) { picks = []; paint(); } };
+    this.solve = () => { picks = [0, 1, 2, 4, 7, 12, 20, 9]; wrap.classList.add('solved'); paint(); };
+  },
+  enter(el) { markClaimed(el, 2); if (S.keys[2]) this.solve(); },
+};
+
+/* ---------------- IV. The Chapel of Liturgy: rebuild the prayers ---------------- */
+const LIT = [['The void devours all gods.', '1yhbp4fp9io'], ['Blood opens the eye.', '1dcfcnamme5'], ['The serpent counts every key.', 'xtu6s513tk']];
+const TILES = ['SHA', 'VORZ', 'ISHKRA', 'GHAZUK', 'NUL', 'MUL', 'KRENN', 'AKH', 'KRUL', 'ZARGUK', 'DURN', 'GHUL', 'SKETH', 'OUROTH', 'ZHAAL'];
+VIEWS.liturgy = {
+  build(el) {
+    el.innerHTML = roomHead(CH[3], 3) + `
+      <div class="panel"><div class="lines-l" id="llines">${LIT.map(([m], i) => `<div class="lline" data-i="${i}"><p>“${m}”</p>
+        <div class="lslots">${'<div class="lslot"></div>'.repeat(3)}</div></div>`).join('')}</div>
+        <div class="pool" id="pool">${TILES.map((t, i) => `<button type="button" class="tile" data-w="${t}" style="animation-delay:${i * 40}ms">${Glyph.svg(t)}</button>`).join('')}</div>
+        <p class="fb" id="lfb"></p>
+        <p class="etched">On the altar’s edge: “Read the Lexicon in the Hall of Glyphs. Remember the Law: the deed comes last.”</p></div>`;
+    let line = 0, cur = [];
+    const lines = $$('.lline', el), tiles = $$('.tile', el);
+    const paint = () => {
+      lines.forEach((l, i) => { l.classList.toggle('cur', i === line); l.classList.toggle('done', i < line); });
+      if (line < 3) $$('.lslot', lines[line]).forEach((s, k) => s.innerHTML = cur[k] != null ? Glyph.svg(tiles[cur[k]].dataset.w) : '');
+    };
+    $('#pool', el).addEventListener('click', e => {
+      const t = e.target.closest('.tile'); if (!t || line >= 3 || S.keys[3]) return;
+      const i = tiles.indexOf(t); cur.push(i); t.classList.add('used'); Audio.sfx('tick'); paint();
+      if (cur.length < 3) return;
+      const words = cur.map(k => tiles[k].dataset.w).join(' ');
+      if (hash(words) === LIT[line][1]) {
+        Audio.sfx('good'); line++; cur = []; paint(); $('#lfb', el).className = 'fb good';
+        $('#lfb', el).textContent = line < 3 ? 'The altar hums the line back to you.' : 'The liturgy is whole.';
+        if (line === 3) setTimeout(() => award(3), 1200);
+      } else {
+        Audio.sfx('deny'); shake(lines[line]); $('#lfb', el).className = 'fb'; $('#lfb', el).textContent = 'The altar rejects the prayer. The tiles slide back.';
+        setTimeout(() => { cur.forEach(k => tiles[k].classList.remove('used')); cur = []; paint(); }, 900);
+      }
+    });
+    // tapping a filled slot returns its tile
+    $('#llines', el).addEventListener('click', e => { const s = e.target.closest('.lslot'); if (!s || line >= 3) return;
+      const k = $$('.lslot', lines[line]).indexOf(s); if (k < 0 || cur[k] == null) return;
+      tiles[cur[k]].classList.remove('used'); cur.splice(k, 1); paint(); });
+    this.solve = () => { line = 3; tiles.forEach(t => t.classList.add('used')); paint();
+      const ans = [['NUL', 'ZARGUK', 'SHA'], ['ISHKRA', 'AKH', 'GHUL'], ['OUROTH', 'GHAZUK', 'KRENN']];
+      lines.forEach((l, i) => $$('.lslot', l).forEach((s, k) => s.innerHTML = Glyph.svg(ans[i][k]))); };
+    paint();
+  },
+  enter(el) { markClaimed(el, 3); if (S.keys[3]) this.solve(); },
+};
+
+/* ---------------- V. The Ring at the End: read the way it eats ---------------- */
+VIEWS.ring = {
+  build(el) {
+    const msg = atob('SSBIQVZFIE5PIEJFR0lOTklORyBBTkQgTk8gRU5ELiBTUEVBSyBUSEUgTkFNRSBUSEUgT1VUU0lERVJTIEdBVkUgTUUu'), txt = ' ' + [...msg].reverse().join('') + ' ';
+    el.innerHTML = roomHead(CH[4], 4) + `
+      <div class="endring"><svg viewBox="-170 -170 340 340" aria-label="a ring of serpent script">
+        <circle r="160" fill="#120d12" stroke="#000" stroke-width="2"/><circle r="152" fill="none" stroke="#ffffff12"/><circle r="112" fill="none" stroke="#ffffff12"/>
+        <circle r="104" fill="#060407"/>
+        <g class="spin"><g fill="none" stroke="#ff8a4a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 3px #ff6a1a)">${Glyph.ring(txt, 132, 17)}</g>
+          <g transform="translate(0 -132)"><path d="M10 -9L-10 0L10 9Q4 0 10 -9Z" fill="#ff6a1a"/><circle cx="3" cy="-3" r="1.6" fill="#000"/></g></g>
+        <circle r="40" fill="none" stroke="#ff6a1a" stroke-width="2" opacity=".4"/><circle r="40" fill="none" stroke="#ff6a1a" stroke-width="6" opacity=".15" style="filter:blur(4px)"/>
+        <text y="76" text-anchor="middle" font-family="Cinzel" font-size="13" fill="#6f6458" letter-spacing="5">NUL KRUL</text></svg></div>
+      <p class="etched" style="font-size:1.2rem"><b>“It begins where it ends. It is read the way it eats.”</b></p>
+      <p class="etched">Hold the ring to stop it turning.</p>
+      ${speakForm(4)}`;
+  },
+  enter(el) { markClaimed(el, 4); },
+};
+
+
+================file name: sanctum.js
+Description: The Door at the End and the Sanctum behind it where the Abyssal Serpent waits.
+
+// The Door at the End, and the Sanctum behind it where the Abyssal Serpent waits.
+
+/* ---------------- the door ---------------- */
+VIEWS.door = (() => {
+  const POS = [[-41, -41], [41, -41], [41, 41], [-41, 41], [0, -9]], SC = [1, 1, 1, 1, 1.3];
+  const CUTS = [-80, -22, 31, 86, 139, 197, 252];
+  const P = (a, r) => [+(Math.cos(a * Math.PI / 180) * r).toFixed(1), +(Math.sin(a * Math.PI / 180) * r).toFixed(1)];
+  const RIM = 'NUL ZARG UK SHA . OUROTH SHA OUROTH . KRUL . ';
+  let busy = false;
+  const fourTurned = () => S.turned.slice(0, 4).every(Boolean);
+  const anim = (el, frames, opts) => el.animate(frames, { fill: 'forwards', ...opts }).finished;
+  const chain = (x1, y1, x2, y2) => `<line class="ch0" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="ch1" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  const toScreen = (x, y) => { const p = new DOMPoint(x, y).matrixTransform($('#door').getScreenCTM()); return [p.x, p.y]; };
+
+  function stoneTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'), R = Math.random;
+    const rg = g.createRadialGradient(240, 210, 20, 256, 256, 262);
+    rg.addColorStop(0, '#3b3442'); rg.addColorStop(.65, '#211b26'); rg.addColorStop(1, '#0b080e');
+    g.fillStyle = rg; g.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 260; i++) { const x = R() * 512, y = R() * 512, r = 8 + R() * 70, b = g.createRadialGradient(x, y, 0, x, y, r);
+      b.addColorStop(0, R() < .7 ? 'rgba(0,0,0,.2)' : 'rgba(150,135,170,.07)'); b.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = b; g.fillRect(x - r, y - r, r * 2, r * 2); }
+    for (let v = 0; v < 22; v++) { let x = R() * 512, y = R() * 512; g.beginPath(); g.moveTo(x, y);
+      for (let k = 0; k < 40; k++) { x += (R() - .5) * 20; y += (R() - .5) * 20; g.lineTo(x, y); }
+      g.strokeStyle = v < 6 ? 'rgba(150,70,255,.28)' : 'rgba(0,0,0,.4)'; g.lineWidth = .4 + R() * 1.3; g.stroke(); }
+    const d = g.getImageData(0, 0, 512, 512);
+    for (let i = 0; i < d.data.length; i += 4) { const n = (R() - .5) * 28; d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n; }
+    g.putImageData(d, 0, 0); return c.toDataURL();
+  }
+
+  function buildDoor(door) {
+    const c0 = [2, -3];
+    const bound = CUTS.map((a, i) => [c0, ...[1, 2, 3, 4, 5, 6].map(k => P(a + Math.sin(i * 7.3 + k * 2.1) * 7, k * 19))]);
+    let clips = '', shards = '', cracks = '', teeth = '', chains = '', locks = '';
+    CUTS.forEach((a, i) => {
+      const b = CUTS[(i + 1) % 7] + (i === 6 ? 360 : 0), arc = [];
+      for (let x = a; x < b; x += 8) arc.push(P(x, 118));
+      clips += `<clipPath id="sh${i}"><polygon points="${[...bound[i], ...arc, ...[...bound[(i + 1) % 7]].reverse()].join(' ')}"/></clipPath>`;
+      shards += `<g class="shard" clip-path="url(#sh${i})"><use href="#face"/></g>`;
+      cracks += `<polyline class="crack" pathLength="1" points="${bound[i].join(' ')}"/>`;
+    });
+    for (let k = 0; k < 44; k++) { const a = k * 360 / 44, w = 3.2; teeth += `<polygon points="${[P(a - w, 105), P(a, 96.5 - (k % 2) * 3), P(a + w, 105)].join(' ')}"/>`; }
+    POS.forEach(([x, y], i) => {
+      if (i < 4) { const a = Math.atan2(y, x) * 180 / Math.PI, [ax, ay] = P(a, 92);
+        chains += `<g class="chain" id="ch${i}">${chain(ax, ay, x, y - 10)}${chain(x, y + 6, POS[4][0] + x * .2, POS[4][1] + 8 + y * .2)}</g>`; }
+      const c = CH[i];
+      locks += `<g transform="translate(${x} ${y}) scale(${SC[i]})"><g class="lock lk" id="lk${i}" tabindex="0" role="button" aria-label="${c.lock}" style="color:${c.color}">
+        <path class="shackle" d="M-7.5 -3V-10A7.5 7.5 0 0 1 7.5 -10V-3"/>
+        ${i === 4 ? '<circle class="body" cy="6" r="15"/><circle class="rim" cy="6" r="12.5"/>'
+          : '<path class="body" d="M-12 -4H12V8Q12 16 0 20Q-12 16 -12 8Z"/><path class="rim" d="M-9.5 -1.5H9.5V8Q9.5 14 0 17.3Q-9.5 14 -9.5 8Z"/>'}
+        <path class="sig" d="${c.sig}"/><circle class="hole" cy="13" r="1.8"/><path class="hole" d="M-.9 13.5H.9L1.5 17H-1.5Z"/></g></g>`;
+    });
+    const rune = Glyph.ring(RIM, 87.5, 9), creed = Glyph.ring('NUL ZARG UK SHA . OUROTH SHA OUROTH . GHAZ UK DURN SHA . ', 113, 8.5);
+    door.innerHTML = `<defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <linearGradient id="iron" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a4e46"/><stop offset=".5" stop-color="#2a221e"/><stop offset="1" stop-color="#110d0b"/></linearGradient>
+        <linearGradient id="ironV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2b2420"/><stop offset=".45" stop-color="#8d8076"/><stop offset="1" stop-color="#2b2420"/></linearGradient>
+        <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9cfba"/><stop offset="1" stop-color="#6d6357"/></linearGradient>
+        <radialGradient id="pit"><stop offset="0" stop-color="#000"/><stop offset=".7" stop-color="#05010a"/><stop offset="1" stop-color="#2a0f40"/></radialGradient>
+        <clipPath id="disk"><circle r="98"/></clipPath>${clips}
+        <g id="face"><image href="${stoneTexture()}" x="-98" y="-98" width="196" height="196" clip-path="url(#disk)"/>
+          <path class="carve" d="${spiralPath(24, 76, 5, 500)}"/>
+          <circle class="groove" r="95"/><circle class="groove hi" r="94"/><circle class="groove" r="80"/><circle class="groove hi" r="79.2"/><circle class="groove" r="22"/>
+          <g class="cut hi" transform="translate(.45 .55)">${rune}</g><g class="cut">${rune}</g></g>
+      </defs>
+      <circle r="120" fill="#120e13" stroke="#000" stroke-width="2"/><circle r="113" fill="none" stroke="#1d181e" stroke-width="13"/>
+      <g class="spin-slow" fill="none" stroke="#a477ff" stroke-width="1.1" stroke-linecap="round" opacity=".55" filter="url(#glow)">${creed}</g>
+      <circle r="99" fill="url(#pit)"/>
+      <g id="shards">${shards}</g><g id="cracks">${cracks}</g>
+      <g fill="url(#bone)" stroke="#000" stroke-width=".6">${teeth}</g>
+      ${chains}${locks}<g id="fx"></g>`;
+    door.addEventListener('click', e => { const l = e.target.closest('.lock'); if (l) useLock(+l.id.slice(2)); });
+    door.addEventListener('keydown', e => { const l = e.target.closest('.lock'); if (l && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); useLock(+l.id.slice(2)); } });
+  }
+  function hideLock(i) { $('#lk' + i).parentNode.style.display = 'none'; const ch = $('#ch' + i); if (ch) ch.style.display = 'none'; }
+  function refresh() {
+    S.turned.forEach((t, i) => t && hideLock(i));
+    CH.forEach((c, i) => { const l = $('#lk' + i); const ready = S.keys[i] && !S.turned[i] && (i < 4 || fourTurned());
+      l.classList.toggle('ready', !!ready); l.classList.toggle('sealed', !S.keys[i]); });
+    const held = S.keys.filter((k, i) => k && !S.turned[i]).length;
+    $('#doorhint').textContent = S.turned.every(Boolean) ? 'The door is open. Something is waiting.'
+      : held ? `You carry ${held} unturned key${held > 1 ? 's' : ''}. Touch a glowing lock to turn it. The End turns last.` : 'You carry no unturned keys.';
+  }
+  async function useLock(i) {
+    if (busy || S.turned[i]) return;
+    const c = CH[i];
+    if (!S.keys[i]) { toast(`You do not carry the ${c.key}.`); Audio.sfx('deny'); shake($('#lk' + i)); return; }
+    if (i === 4 && !fourTurned()) { toast('The End turns last. Four locks still bind it.'); Audio.sfx('deny'); return; }
+    busy = true;
+    const lk = $('#lk' + i), ch = $('#ch' + i), [x, y] = POS[i], ty = y + 13 * SC[i], s = SC[i];
+    const key = document.createElementNS(NS, 'g');
+    key.style.color = c.color; key.style.pointerEvents = 'none'; key.innerHTML = `<g filter="url(#glow)">${KEY_SVG}</g>`;
+    $('#fx').append(key);
+    Audio.sfx('summon'); Ambient.burst(...toScreen(-10, 62), c.color, 50);
+    await anim(key, [{ transform: 'translate(10px,62px) scale(0) rotate(-220deg)', opacity: 0 }, { transform: 'translate(10px,62px) scale(1.6) rotate(0deg)', opacity: 1 }], { duration: 1000, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    await anim(key, [{ transform: 'translate(10px,62px) scale(1.6)' }, { transform: `translate(${x - 22}px,${ty}px) scale(${s})` }], { duration: 850, easing: 'cubic-bezier(.6,0,.3,1)' });
+    await anim(key, [{ transform: `translate(${x - 22}px,${ty}px) scale(${s})` }, { transform: `translate(${x}px,${ty}px) scale(${s})` }], { duration: 260, easing: 'ease-in' });
+    Audio.sfx('clank');
+    await anim(key, [{ transform: `translate(${x}px,${ty}px) scale(${s},${s})` }, { transform: `translate(${x}px,${ty}px) scale(${s},${-s})` }], { duration: 520, easing: 'ease-in-out' });
+    Ambient.burst(...toScreen(x, y), c.color, 80); Audio.sfx('clank');
+    await anim(lk.querySelector('.shackle'), [{ transform: 'none' }, { transform: 'translateY(-7px)' }], { duration: 220, easing: 'ease-out' });
+    await wait(220);
+    anim(key, [{ opacity: 1 }, { opacity: 0 }], { duration: 500 }).then(() => key.remove());
+    if (ch) anim(ch, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(22px)' }], { duration: 900, easing: 'ease-in' });
+    await anim(lk, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(70px) rotate(35deg)', opacity: 0 }], { duration: 1000, easing: 'cubic-bezier(.5,0,.9,.5)' });
+    hideLock(i); S.turned[i] = 1; save(); renderKeyring(); refresh();
+    busy = false;
+    if (i === 4) finale(); else if (fourTurned()) toast('Four keys turned. The End is listening.');
+  }
+  async function finale() {
+    busy = true; Audio.sfx('boom'); Audio.awaken();
+    const door = $('#door'), shards = $$('.shard'), cracks = $$('.crack');
+    door.animate([{ transform: 'none' }, ...Array.from({ length: 14 }, (_, k) => ({ transform: `translate(${(Math.random() - .5) * k}px,${(Math.random() - .5) * k}px)` })), { transform: 'none' }], { duration: 1700 });
+    cracks.forEach((c, i) => anim(c, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 900, delay: i * 130, easing: 'ease-out' }));
+    await wait(1800);
+    const [cx, cy] = toScreen(0, 0);
+    Ambient.burst(cx, cy, '#ff6a1a', 140); Ambient.burst(cx, cy, '#a477ff', 90);
+    cracks.forEach(c => anim(c, [{ opacity: 1 }, { opacity: 0 }], { duration: 700 }));
+    shards.forEach((s, i) => {
+      const a = (CUTS[i] + CUTS[(i + 1) % 7] + (i === 6 ? 360 : 0)) / 2 * Math.PI / 180, dx = Math.cos(a) * 24, dy = Math.sin(a) * 24;
+      anim(s, [{ transform: 'none', opacity: 1 }, { transform: `translate(${dx}px,${dy}px)`, opacity: 1, offset: .3 },
+               { transform: `rotate(${(i % 2 ? 1 : -1) * (130 + i * 30)}deg) scale(0)`, opacity: 0 }], { duration: 2800, delay: i * 90, easing: 'cubic-bezier(.5,0,.8,.4)' });
+    });
+    await wait(3400);
+    $('#fade').classList.add('on'); await wait(1700);
+    busy = false; location.hash = '#sanctum';
+    await wait(300); $('#fade').classList.remove('on');
+  }
+  return {
+    guard: () => S.keys.every(Boolean),
+    build(el) {
+      el.innerHTML = `<a class="backlink" href="#map">↺ The Descent</a><p class="tag">The deepest point</p><h2>The Door at the End</h2>
+        <p class="flavor">A round door of black stone set in a frame of teeth. Five locks bind it. Around its rim, the cult’s creed.</p>
+        <div class="doorbox"><svg id="door" viewBox="-122 -122 244 244" aria-label="The Door at the End"></svg></div><p class="doorhint" id="doorhint"></p>`;
+      buildDoor($('#door', el));
+    },
+    enter() { refresh(); },
+  };
+})();
+
+/* ---------------- the sanctum ---------------- */
+const REVEAL = [
+  ['THE DOOR WAS A MOUTH', 'The door at the end was never a door. It was a mouth.'],
+  [null, 'Five keys turned. Five scales fell from the Coil, and the Coil noticed.'],
+  [null, 'Thessaros did not fall. Thessaros was finished, the way a meal is finished.'],
+  ['NUL ZARG UK SHA', 'Nul zarg-ûk shâ. The void devours the gods.'],
+  ['OUROTH SHA OUROTH', 'Ouroth shâ Ouroth. The Serpent devours the Serpent.'],
+  ['WHAT ENDS BEGINS', 'What ends, begins. What begins is swallowed.'],
+  [null, 'You came looking for the end. There is no end. There is only the next bite.'],
+  [null, '<span class="sign">— the One at the End</span>'],
+];
+
+VIEWS.sanctum = (() => {
+  let g, W, H, CX, CY, R, BW, raf = 0, t0 = 0, last = 0, T = 0, rot = 0, form = 0, eyes = 0, awake = 0, roared = false, revealT = 0, iris = null;
+  const N = 320, COLS = 190, ROWS = 9, SPAN = TAU * .955, RING = 'NUL ZARG UK SHA . OUROTH SHA OUROTH . KRUL IS THE FIRST WORD AND THE LAST . ';
+  const pts = Array.from({ length: N + 1 }, () => ({ x: 0, y: 0, tx: 0, ty: 0, nx: 0, ny: 0, w: 0 }));
+  const rnd = Array.from({ length: COLS * ROWS }, Math.random);
+  const stars = Array.from({ length: 280 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.2 + .2, p: Math.random() * TAU }));
+  const glyphCache = {}, gp = ch => ch in glyphCache ? glyphCache[ch] : (glyphCache[ch] = Glyph.path(ch) && new Path2D(Glyph.path(ch)));
+  let motes = [], parts = [], LX = -.45, LY = -.6, tLX = LX, tLY = LY;
+
+  function resize() {
+    const d = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; CX = W / 2; CY = H / 2;
+    g.canvas.width = W * d; g.canvas.height = H * d; g.setTransform(d, 0, 0, d, 0, 0);
+    R = Math.min(W, H) * .34; BW = R * .17;
+  }
+  function spawn(m, any) {
+    const far = Math.hypot(W, H) * .6;
+    m.a = Math.random() * TAU; m.r = any ? R * .3 + Math.random() * far : far * (.85 + Math.random() * .3);
+    m.h = Math.random() < .72 ? 262 + Math.random() * 40 : (Math.random() < .5 ? 105 : 12);
+    m.z = .4 + Math.random() * 1.3; m.px = null; return m;
+  }
+
+  // A fibrous serpent iris, painted once and reused every frame.
+  function irisTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 512; const q = c.getContext('2d'), M = 256, rnd = Math.random;
+    const b = q.createRadialGradient(M, M, 0, M, M, M);
+    [[0, '#fbffb0'], [.1, '#d8ff5a'], [.3, '#6fdc2a'], [.5, '#ffb01a'], [.68, '#ff5a12'], [.85, '#a8180a'], [.95, '#2a0402'], [1, '#000']].forEach(s => b.addColorStop(...s));
+    q.fillStyle = b; q.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 1800; i++) {
+      const a = rnd() * TAU, r0 = M * (.06 + rnd() * .2), r1 = M * (.45 + rnd() * .5), w = (rnd() - .5) * .12;
+      q.strokeStyle = rnd() < .55 ? `rgba(255,${200 + rnd() * 55 | 0},${110 + rnd() * 80 | 0},${.05 + rnd() * .14})` : `rgba(40,0,0,${.08 + rnd() * .2})`;
+      q.lineWidth = .4 + rnd() * 1.6; q.beginPath(); q.moveTo(M + Math.cos(a) * r0, M + Math.sin(a) * r0);
+      q.quadraticCurveTo(M + Math.cos(a + w) * (r0 + r1) / 2, M + Math.sin(a + w) * (r0 + r1) / 2, M + Math.cos(a + w * 2) * r1, M + Math.sin(a + w * 2) * r1); q.stroke();
+    }
+    for (let i = 0; i < 160; i++) { const a = rnd() * TAU, r = M * (.35 + rnd() * .4);
+      q.fillStyle = `rgba(20,0,0,${.15 + rnd() * .25})`; q.beginPath(); q.ellipse(M + Math.cos(a) * r, M + Math.sin(a) * r, 2 + rnd() * 6, 1 + rnd() * 2.5, a, 0, TAU); q.fill(); }
+    q.beginPath(); for (let i = 0; i <= 120; i++) { const a = i / 120 * TAU, r = M * (.27 + Math.sin(i * 1.7) * .02 + rnd() * .02);
+      i ? q.lineTo(M + Math.cos(a) * r, M + Math.sin(a) * r) : q.moveTo(M + Math.cos(a) * r, M + Math.sin(a) * r); }
+    q.strokeStyle = 'rgba(255,245,170,.45)'; q.lineWidth = 3; q.stroke();
+    return c;
+  }
+
+  function sample(t) {
+    for (let i = 0; i <= N; i++) {
+      const s = i / N, a = rot + (1 - s) * SPAN - Math.PI / 2, fade = Math.min(1, s * 4, (1 - s) * 6);
+      const r = R + Math.sin(s * TAU * 4 - t * 1.1) * BW * .09 * fade;
+      const p = pts[i]; p.x = CX + Math.cos(a) * r; p.y = CY + Math.sin(a) * r;
+      p.w = BW * (.1 + .9 * smooth(s / .45)) * (1 - .1 * smooth((s - .9) / .1)) * (1 + .025 * Math.sin(t * 1.4));
+    }
+    for (let i = 0; i <= N; i++) {
+      const p = pts[i], q = pts[Math.min(i + 1, N)], o = pts[Math.max(i - 1, 0)];
+      let tx = q.x - o.x, ty = q.y - o.y; const l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l;
+      let nx = -ty, ny = tx; if (nx * (p.x - CX) + ny * (p.y - CY) < 0) { nx = -nx; ny = -ny; }
+      p.tx = tx; p.ty = ty; p.nx = nx; p.ny = ny;
+    }
+  }
+
+  function drawVoid(t, dt) {
+    const bg = g.createRadialGradient(CX, CY, 0, CX, CY, Math.hypot(W, H) * .6);
+    bg.addColorStop(0, '#0c0614'); bg.addColorStop(1, '#010002'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    [['rgba(80,25,130,.2)', 0], ['rgba(10,70,80,.12)', 2.1], ['rgba(120,20,30,.12)', 4.2]].forEach(([c, o]) => {
+      const x = CX + Math.cos(t * .02 + o) * W * .35, y = CY + Math.sin(t * .027 + o) * H * .3, r = Math.max(W, H) * .55;
+      const n = g.createRadialGradient(x, y, 0, x, y, r); n.addColorStop(0, c); n.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = n; g.fillRect(0, 0, W, H); });
+    g.fillStyle = '#cbbfe8';
+    for (const s of stars) { g.globalAlpha = .25 + .25 * Math.sin(t * 1.3 + s.p); g.fillRect(s.x * W, s.y * H, s.r, s.r); }
+    g.globalAlpha = 1;
+    const ringR = R + BW * 2.6, k = BW * .55 / 20, chars = [...RING], step = TAU / chars.length;
+    g.save(); g.translate(CX, CY); g.lineWidth = 1.15; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = `rgba(${170 + awake * 85},${110 - awake * 40},255,${(.15 + awake * .25) * smooth(form * 2)})`;
+    chars.forEach((ch, i) => { const p = gp(ch); if (!p) return;
+      g.save(); g.rotate(-rot * .6 + t * .01 + i * step); g.translate(0, -ringR); g.scale(k, k); g.translate(-6, -10); g.stroke(p); g.restore(); });
+    g.restore();
+    g.globalCompositeOperation = 'lighter';
+    const sp = dt * (1 + awake * 2.5) * (REDUCED ? .3 : 1);
+    for (const m of motes) {
+      m.a += sp * (.2 + 60 / (m.r + 30)); m.r -= sp * (14 + 2400 / (m.r + 40)) * m.z * .5;
+      if (m.r < R * .06) { spawn(m); continue; }
+      const x = CX + Math.cos(m.a) * m.r, y = CY + Math.sin(m.a) * m.r;
+      if (m.px != null) { g.strokeStyle = `hsla(${m.h},85%,65%,${Math.min(1, m.r / (R * .7)) * .55})`; g.lineWidth = m.z;
+        g.beginPath(); g.moveTo(m.px, m.py); g.lineTo(x, y); g.stroke(); }
+      m.px = x; m.py = y;
+    }
+    g.globalCompositeOperation = 'source-over';
+    const hr = R * (.6 + awake * .1) * (1 + .03 * Math.sin(t * 1.7));
+    const ab = g.createRadialGradient(CX, CY, hr * .15, CX, CY, hr * 1.25);
+    ab.addColorStop(0, '#000'); ab.addColorStop(.55, 'rgba(0,0,0,.96)');
+    ab.addColorStop(.8, `rgba(${90 + awake * 120},${30 + awake * 20},${150 - awake * 100},.28)`); ab.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = ab; g.beginPath(); g.arc(CX, CY, hr * 1.25, 0, TAU); g.fill();
+    g.lineWidth = 2; g.globalCompositeOperation = 'lighter';
+    for (let a = 0; a < 4; a++) { g.beginPath();
+      for (let q = 0; q <= 1; q += .02) { const an = -t * .5 + a * TAU / 4 + q * 3.4, r = hr * (1.15 - q * .95), x = CX + Math.cos(an) * r, y = CY + Math.sin(an) * r;
+        q ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.strokeStyle = `rgba(150,80,255,${.07 + awake * .06})`; g.stroke(); }
+    g.globalCompositeOperation = 'source-over';
+    if (awake > .01) abyssEye(t, hr);
+  }
+
+  // The eye in the abyss: scaled lids, a fibrous iris, a wet slit pupil that breathes and follows you.
+  function abyssEye(t, hr) {
+    const bt = t % 6.5, blink = bt < .4 ? 1 - Math.sin(bt / .4 * Math.PI) : 1;
+    const open = smooth(awake) * blink, ew = hr * .92, eh = hr * .4;
+    const almond = (h) => { g.beginPath(); g.moveTo(-ew, 0); g.bezierCurveTo(-ew * .45, -h * 1.45, ew * .45, -h * 1.45, ew, 0); g.bezierCurveTo(ew * .45, h * 1.45, -ew * .45, h * 1.45, -ew, 0); g.closePath(); };
+    g.save(); g.translate(CX, CY);
+    g.globalCompositeOperation = 'lighter';
+    const gl = g.createRadialGradient(0, 0, 0, 0, 0, ew * 1.5);
+    gl.addColorStop(0, `rgba(255,90,25,${.35 * open})`); gl.addColorStop(.6, `rgba(160,40,200,${.12 * awake})`); gl.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gl; g.fillRect(-ew * 1.5, -ew * 1.5, ew * 3, ew * 3);
+    g.globalCompositeOperation = 'source-over';
+    // ring of plated scales around the socket
+    for (let row = 2; row >= 0; row--) { const s = 1.1 + row * .12, n = 34 + row * 6, sz = hr * (.07 + row * .015);
+      for (let i = 0; i < n; i++) { const q = (i + (row % 2) * .5) / n * TAU, x = Math.cos(q) * ew * s, y = Math.sin(q) * eh * s * 1.3;
+        g.save(); g.translate(x, y); g.rotate(Math.atan2(y / (eh * eh), x / (ew * ew)));
+        g.beginPath(); g.ellipse(0, 0, sz, sz * .7, 0, 0, TAU);
+        g.fillStyle = `hsl(${270 + row * 6},${25 + row * 5}%,${5 + (2 - row) * 3}%)`; g.globalAlpha = smooth(awake) * .75; g.fill();
+        g.strokeStyle = 'rgba(164,119,255,.25)'; g.lineWidth = 1; g.stroke(); g.restore(); } }
+    g.globalAlpha = 1;
+    // the lids
+    almond(eh); const lid = g.createLinearGradient(0, -eh * 1.5, 0, eh * 1.5);
+    lid.addColorStop(0, '#1d1024'); lid.addColorStop(.5, '#08040b'); lid.addColorStop(1, '#1d1024'); g.fillStyle = lid; g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.9)'; g.lineWidth = 4; g.stroke();
+    for (let k = 1; k <= 3; k++) { g.save(); almond(eh * (1 - k * .15 * (1 - open) - .02)); g.strokeStyle = 'rgba(164,119,255,.08)'; g.lineWidth = 1.5; g.stroke(); g.restore(); }
+    if (open > .02) {
+      const oh = eh * open;
+      g.save(); almond(oh); g.clip();
+      const ox = LX * ew * .16, oy = LY * oh * .25, ir = ew * 1.02;
+      g.drawImage(iris, ox - ir, oy - ir, ir * 2, ir * 2);
+      g.globalCompositeOperation = 'lighter';
+      const pulse = .25 + .15 * Math.sin(t * 1.8);
+      const fire = g.createRadialGradient(ox, oy, 0, ox, oy, ir * .5); fire.addColorStop(0, `rgba(255,200,80,${pulse})`); fire.addColorStop(1, 'rgba(255,80,0,0)');
+      g.fillStyle = fire; g.fillRect(-ew, -eh * 2, ew * 2, eh * 4);
+      g.globalCompositeOperation = 'source-over';
+      const dil = .045 + .035 * (.5 + .5 * Math.sin(t * .6)), pw = ew * dil;
+      for (const [w, a] of [[2.6, .25], [1.7, .5], [1, 1]]) { g.fillStyle = `rgba(0,0,0,${a})`; g.beginPath(); g.ellipse(ox, oy, pw * w, eh * 1.25, 0, 0, TAU); g.fill(); }
+      const shade = g.createLinearGradient(0, -oh * 1.45, 0, oh * 1.45);
+      shade.addColorStop(0, 'rgba(0,0,0,.75)'); shade.addColorStop(.3, 'rgba(0,0,0,0)'); shade.addColorStop(.85, 'rgba(0,0,0,0)'); shade.addColorStop(1, 'rgba(0,0,0,.6)');
+      g.fillStyle = shade; g.fillRect(-ew, -eh * 2, ew * 2, eh * 4);
+      g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.ellipse(-ew * .32 + ox * .3, -oh * .42, ew * .07, oh * .12, -.4, 0, TAU); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.ellipse(-ew * .2 + ox * .3, -oh * .2, ew * .025, oh * .05, -.4, 0, TAU); g.fill();
+      g.restore();
+      almond(oh); g.strokeStyle = 'rgba(255,90,40,.55)'; g.lineWidth = 2; g.stroke();
+      g.strokeStyle = 'rgba(0,0,0,.9)'; g.lineWidth = 5; g.globalAlpha = .6; g.stroke(); g.globalAlpha = 1;
+    }
+    g.restore();
+  }
+
+  function drawSerpent(t) {
+    sample(t);
+    const lastI = Math.max(2, Math.round(form * N));
+    const body = new Path2D();
+    for (let i = 0; i <= lastI; i++) { const p = pts[i]; body.lineTo(p.x + p.nx * p.w, p.y + p.ny * p.w); }
+    for (let i = lastI; i >= 0; i--) { const p = pts[i]; body.lineTo(p.x - p.nx * p.w, p.y - p.ny * p.w); }
+    body.closePath();
+    g.save(); g.shadowColor = 'rgba(0,0,0,.9)'; g.shadowBlur = BW; g.shadowOffsetY = BW * .2; g.fillStyle = '#040207'; g.fill(body); g.restore();
+    const ll = Math.hypot(LX, LY, .9), L0 = LX / ll, L1 = LY / ll, L2 = .9 / ll;
+    const seg = SPAN * R / COLS, veins = .016 + awake * .05;
+    g.lineWidth = .6;
+    for (let j = 0; j < COLS; j++) for (let k = 0; k < ROWS; k++) {
+      const s = (j + (k & 1) * .5 + .5) / COLS; if (s >= form || s >= 1) continue;
+      const p = pts[Math.round(s * N)];
+      const phi = (-1 + (k + .5) * 2 / ROWS) * Math.PI / 2 * .93, sn = Math.sin(phi), cs = Math.cos(phi);
+      const off = sn * p.w * .97, cx = p.x + p.nx * off, cy = p.y + p.ny * off;
+      const hw = p.w * cs * (Math.PI / ROWS) * .64, len = seg * 1.35 * (.35 + .65 * Math.min(1, p.w / BW * 1.6));
+      const dif = Math.max(0, p.nx * sn * L0 + p.ny * sn * L1 + cs * L2), spec = dif ** 30;
+      const hue = 268 + 30 * Math.sin(s * 11 + t * .35) + 70 * spec, lit = 2 + 15 * dif * dif + 48 * spec;
+      const tx = p.tx, ty = p.ty, nx = p.nx, ny = p.ny, fx = cx + tx * len * .5, fy = cy + ty * len * .5;
+      g.beginPath();
+      g.moveTo(fx + nx * hw, fy + ny * hw);
+      g.quadraticCurveTo(cx - tx * len * .35 + nx * hw * 1.1, cy - ty * len * .35 + ny * hw * 1.1, cx - tx * len * .62, cy - ty * len * .62);
+      g.quadraticCurveTo(cx - tx * len * .35 - nx * hw * 1.1, cy - ty * len * .35 - ny * hw * 1.1, fx - nx * hw, fy - ny * hw);
+      g.closePath();
+      if (rnd[j * ROWS + k] < veins) { const pulse = .5 + .5 * Math.sin(t * 2.3 + j * .7); g.fillStyle = `hsl(${(j + k) & 1 ? 8 : 100},85%,${5 + 22 * pulse}%)`; }
+      else g.fillStyle = `hsl(${hue},${38 + 25 * spec}%,${lit}%)`;
+      g.fill();
+      g.strokeStyle = `hsla(${hue},50%,${lit + 13}%,.5)`; g.stroke();
+      if (k === ROWS >> 1 && j % 2 === 0) { g.beginPath(); g.moveTo(cx + tx * len * .3, cy + ty * len * .3); g.lineTo(cx - tx * len * .5, cy - ty * len * .5);
+        g.strokeStyle = `hsla(${hue},40%,${lit + 22}%,.5)`; g.stroke(); }
+    }
+    g.strokeStyle = 'rgba(0,0,0,.85)'; g.lineWidth = 1.6; g.stroke(body);
+    g.globalCompositeOperation = 'lighter'; g.beginPath();
+    for (let i = 0; i <= lastI; i++) { const p = pts[i]; g.lineTo(p.x + p.nx * p.w * .97, p.y + p.ny * p.w * .97); }
+    g.strokeStyle = `rgba(164,119,255,${.25 + awake * .2})`; g.lineWidth = 1.4; g.stroke(); g.globalCompositeOperation = 'source-over';
+    for (let s = .1; s < Math.min(.93, form); s += 1 / 72) {
+      const p = pts[Math.round(s * N)], len = p.w * (.5 + .12 * Math.sin(s * 90)), bx = p.x + p.nx * p.w * .82, by = p.y + p.ny * p.w * .82;
+      const dif = Math.max(0, p.nx * L0 + p.ny * L1 + .4 * L2);
+      g.beginPath(); g.moveTo(bx + p.tx * len * .45, by + p.ty * len * .45);
+      g.quadraticCurveTo(bx + p.nx * len * .7, by + p.ny * len * .7, bx + p.nx * len * 1.15 - p.tx * len * .95, by + p.ny * len * 1.15 - p.ty * len * .95);
+      g.lineTo(bx - p.tx * len * .45, by - p.ty * len * .45); g.closePath();
+      g.fillStyle = `hsl(36,14%,${12 + dif * 36}%)`; g.fill(); g.strokeStyle = 'rgba(0,0,0,.7)'; g.lineWidth = .8; g.stroke();
+    }
+    if (form < 1) { const p = pts[lastI]; for (let i = 0; i < 3; i++) { const a = Math.random() * TAU, v = 30 + Math.random() * 120;
+      parts.push({ x: p.x + (Math.random() - .5) * p.w * 2, y: p.y + (Math.random() - .5) * p.w * 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: .5 + Math.random() * .7,
+        col: Math.random() < .5 ? '#ff6a1a' : '#a477ff' }); } }
+    else drawHead(t);
+  }
+
+  const HEAD = [[-.15, -.95], [.3, -1.25], [.85, -1.2], [1.35, -.88], [1.8, -.52], [2.1, -.2], [2.2, 0], [2.1, .2], [1.8, .52], [1.35, .88], [.85, 1.2], [.3, 1.25], [-.15, .95]];
+  function smoothClosed(pp) {
+    const m = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], n = pp.length;
+    g.beginPath(); g.moveTo(...m(pp[n - 1], pp[0]));
+    for (let i = 0; i < n; i++) g.quadraticCurveTo(...pp[i], ...m(pp[i], pp[(i + 1) % n]));
+    g.closePath();
+  }
+  function drawHead(t) {
+    const p = pts[N], lw = px => px / BW, rise = smooth(eyes * 3);
+    g.save(); g.translate(p.x, p.y); g.transform(p.tx, p.ty, p.nx, p.ny, 0, 0); g.scale(BW, BW);
+    g.globalAlpha = rise;
+    for (const side of [-1, 1]) for (let h = 0; h < 4; h++) {
+      const a0 = [.7, .45, .2, -.05][h], b0 = [.8, 1.0, 1.08, .95][h] * side, len = [2.2, 2.8, 2.3, 1.5][h], spread = [.45, .9, 1.25, .3][h];
+      let px = a0, py = b0;
+      for (let k = 1; k <= 18; k++) { const q = k / 18;
+        const x = a0 - q * len, y = b0 + side * (q * spread + Math.sin(q * 6 + t * (1.3 + awake * 2) + h * 2) * .15 * q);
+        g.beginPath(); g.moveTo(px, py); g.lineTo(x, y);
+        g.strokeStyle = `hsl(35,12%,${50 - q * 34}%)`; g.lineWidth = .18 * (1 - q) + .035; g.lineCap = 'round'; g.stroke(); px = x; py = y; }
+      g.fillStyle = '#2b241f'; g.beginPath(); g.ellipse(px, py, .09, .055, 0, 0, TAU); g.fill();
+      g.fillStyle = `rgba(255,80,20,${.6 * eyes})`; g.beginPath(); g.arc(px + .03, py, .018, 0, TAU); g.fill();
+    }
+    g.save(); g.shadowColor = 'rgba(0,0,0,.9)'; g.shadowBlur = BW * .5;
+    smoothClosed(HEAD);
+    const sk = g.createRadialGradient(.75, -.25, .1, .8, 0, 1.8);
+    sk.addColorStop(0, '#2e1b3d'); sk.addColorStop(.6, '#0d0614'); sk.addColorStop(1, '#020103'); g.fillStyle = sk; g.fill(); g.restore();
+    g.strokeStyle = 'rgba(0,0,0,.9)'; g.lineWidth = lw(1.6); g.stroke();
+    g.strokeStyle = 'rgba(170,130,220,.3)'; g.lineWidth = lw(.8);
+    for (const [a, b, rx, ry] of [[.3, 0, .22, .3], [.72, 0, .2, .26], [1.1, 0, .17, .2], [1.45, 0, .14, .15], [1.75, 0, .1, .1],
+      [.45, -.6, .2, .16], [.45, .6, .2, .16], [1.25, -.45, .15, .12], [1.25, .45, .15, .12], [1.6, -.3, .1, .08], [1.6, .3, .1, .08]]) {
+      g.beginPath(); g.ellipse(a, b, rx, ry, 0, 0, TAU); g.stroke(); }
+    g.beginPath(); g.moveTo(.05, 0); g.lineTo(1.9, 0); g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = lw(1.2); g.stroke();
+    g.fillStyle = '#e9dfc8';
+    for (const s of [-1, 1]) {
+      g.beginPath(); g.moveTo(1.6, .5 * s); g.quadraticCurveTo(2.05, .7 * s, 2.24, .26 * s); g.lineTo(1.84, .38 * s); g.closePath(); g.fill();
+      for (let a = 1; a < 1.6; a += .14) { const b = 1.2 * (2.2 - a) / 1.35 * s; g.beginPath(); g.moveTo(a, b); g.lineTo(a + .06, b * .8); g.lineTo(a + .12, b * .98); g.fill(); }
+    }
+    g.fillStyle = '#000'; for (const s of [-1, 1]) { g.beginPath(); g.ellipse(1.95, .16 * s, .07, .028, 0, 0, TAU); g.fill(); }
+    const glow = (1 + awake * 1.8) * eyes, pulse = .8 + .2 * Math.sin(t * 2.2);
+    for (const s of [-1, 1]) {
+      g.globalCompositeOperation = 'lighter';
+      const eg = g.createRadialGradient(.95, .72 * s, 0, .95, .72 * s, .8 * glow + .01);
+      eg.addColorStop(0, `rgba(255,80,20,${.55 * pulse})`); eg.addColorStop(1, 'rgba(255,40,0,0)');
+      g.fillStyle = eg; g.beginPath(); g.arc(.95, .72 * s, .8 * glow + .01, 0, TAU); g.fill();
+      g.globalCompositeOperation = 'source-over';
+      g.save(); g.beginPath(); g.ellipse(.95, .72 * s, .3, .13 * eyes + .005, 0, 0, TAU); g.clip();
+      g.drawImage(iris, .95 - .32, .72 * s - .32, .64, .64);
+      g.fillStyle = '#000'; g.beginPath(); g.ellipse(.95, .72 * s, .035, .12, 0, 0, TAU); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.ellipse(.86, .72 * s - .05, .05, .025, 0, 0, TAU); g.fill(); g.restore();
+      g.beginPath(); g.moveTo(.45, .55 * s); g.quadraticCurveTo(.95, 1.05 * s, 1.4, .6 * s);
+      g.strokeStyle = 'hsl(36,16%,55%)'; g.lineWidth = .09; g.stroke();
+    }
+    g.restore();
+  }
+
+  function drawParts(dt) {
+    g.globalCompositeOperation = 'lighter';
+    for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.life += dt; if (p.life > p.max) { parts.splice(i, 1); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .97; p.vy *= .97; g.globalAlpha = 1 - p.life / p.max; g.fillStyle = p.col;
+      g.beginPath(); g.arc(p.x, p.y, 1.8, 0, TAU); g.fill(); }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  }
+
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
+    const el = (now - t0) / 1000;
+    form = REDUCED ? 1 : smooth(el / 7);
+    if (form >= 1) eyes = Math.min(1, eyes + dt * .7);
+    if (eyes >= 1 && !roared) { roared = true; Audio.sfx('boom'); Audio.awaken(); revealT = el + 3; }
+    if (roared) awake += (1 - awake) * Math.min(1, dt * .5);
+    if (revealT && el > revealT) { revealT = 0; showReveal(); }
+    rot -= dt * (.03 + awake * .12) * (REDUCED ? .2 : 1);
+    LX += (tLX - LX) * dt * 3; LY += (tLY - LY) * dt * 3;
+    drawVoid(T, dt); drawSerpent(T); drawParts(dt);
+    raf = requestAnimationFrame(frame);
+  }
+  function showReveal() {
+    $('#lines').innerHTML = REVEAL.map(([gl, t]) => `<p>${gl ? Glyph.svg(gl) : ''}${t}</p>`).join('');
+    $('#reveal').hidden = false;
+    $$('#lines p').forEach((p, i) => setTimeout(() => p.classList.add('on'), 400 + i * 1600));
+  }
+  const onMove = e => { tLX = (e.clientX / W - .5) * 1.6; tLY = (e.clientY / H - .5) * 1.6; };
+
+  return {
+    guard: () => S.turned.every(Boolean),
+    build(el) {
+      el.innerHTML = `<canvas id="serpent"></canvas><a class="backlink" href="#map">↺ The Descent</a>
+        <div id="reveal" hidden><div><div class="lines" id="lines"></div><div class="ctrls"><button type="button" id="stare">Stare into it</button></div></div></div>`;
+      g = $('#serpent', el).getContext('2d'); iris = irisTexture();
+      $('#stare', el).onclick = () => { $('#reveal').hidden = true; toast('It is looking back.'); };
+    },
+    enter() {
+      Ambient.pause(true); resize(); motes = Array.from({ length: REDUCED ? 120 : 420 }, () => spawn({}, true)); parts = [];
+      form = eyes = awake = 0; roared = false; revealT = 0; $('#reveal').hidden = true;
+      addEventListener('resize', resize); addEventListener('pointermove', onMove);
+      t0 = last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+    },
+    leave() { cancelAnimationFrame(raf); Ambient.pause(false); removeEventListener('resize', resize); removeEventListener('pointermove', onMove); },
+  };
+})();
+
+
+================file name: dm-guide.html
+Description: Separate DM guide page with the answers and hints for running the game.
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thessaros DM Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1d1418; --faint: #6b5a55; --blood: #8e0f1c; }
+  body { margin: 0; background: #17111a; color: var(--ink); font: 500 1.1rem/1.55 'Cormorant Garamond', Georgia, serif; }
+  main { max-width: 820px; margin: 24px auto; padding: clamp(20px, 5vw, 48px); background: #f4f1ea; }
+  h1, h2 { font-family: 'Cinzel', serif; color: #4a1d6b; letter-spacing: .05em; line-height: 1.2; }
+  h1 { margin-top: 0; } h2 { font-size: 1.15rem; margin: 1.8rem 0 .4rem; }
+  .ans { font: 700 1.05rem 'Cinzel'; color: var(--blood); letter-spacing: .08em; }
+  code { background: #e6e0d4; padding: 0 .3em; }
+  @media print { body { background: #fff; } main { margin: 0; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Thessaros: DM Guide</h1>
+<p>Open <b>index.html</b> in a browser on a TV, laptop or phone. Players click <b>Descend</b>, which also starts the abyss music (press <b>M</b> to mute). The map is a spiral ramp sinking into the void. Click a room and the lantern walks there, then press Enter. Each room unlocks after the one before it. Five rooms give five keys. With all five keys the <b>Door at the End</b> opens on the map. Players turn each key in its lock, and the fifth lock turns last. Then the door breaks and the Abyssal Serpent forms in the Sanctum. The serpent never appears before that.</p>
+<p>Progress saves in that browser. For testing, open <code>index.html?dev</code>. A panel appears bottom-left with <i>All keys</i>, <i>All keys + door</i> (straight to the serpent), <i>Max trial</i> and <i>Reset all</i>.</p>
+
+<h2>The Hall of Glyphs (no key)</h2>
+<p>This room teaches the script and is always open. It has four tabs: the <b>Codex</b> (the alphabet), the <b>Lexicon</b> and the grammar rule, the <b>Slate</b> (type Common and see it in glyphs) and the <b>Trial</b> (name 10 glyphs against a timer, with 3 lives). Every chamber after it needs this room.</p>
+<p><b>How the script works:</b> each letter is a serpent with a head and 0–4 barbs. The Eye head marks vowels (A=0 barbs … U=4). Consonants go through hook-left (B C D F G), hook-right (H J K L M), fangs (N P Q R S) and crown (T V W X Y), and Z has the bar. <b>Grammar:</b> the one acting comes first, then what it acts on, and the deed (the verb) comes last. The creed <i>Ouroth shâ Ouroth</i> is the only exception, because it is a circle.</p>
+
+<h2>I. The Speaking Wall: <span class="ans">NUL</span></h2>
+<p>The inscription is shifted seven letters along the alphabet. The scratched hint reads, in glyphs, IT HAS SWALLOWED SEVEN. Turn the dial seven steps (or drag it) and the wall reads <i>BEFORE THE GODS THERE WAS ONLY THE VOID. SPEAK ITS NAME IN THE TONGUE OF THE COIL.</i> The Lexicon gives the void as <b>nul</b>. If players type VOID or ABYSS, the wall nudges them toward the Tongue.</p>
+<p><b>Hints:</b> “The alphabet is a serpent too: it eats its own tail.” “Read the scratch under the dial.” “The wall wants the Tongue’s word, not ours.”</p>
+
+<h2>II. The Gallery of the Gaze: <span class="ans">V-E-N-O-M</span></h2>
+<p>The statues are named only in glyphs: VAEL the MASON, ESK the PRIESTESS, NYRA the THIEF, ORRIN the SCHOLAR, MOUR the GUARD. From the clues: the mason fell first and the guard last. The thief and the scholar fell back to back, and the priestess fell before the scholar. So the order is Vael, Esk, Nyra, Orrin, Mour. Players tap the statues in that order, and the initials burn as VENOM.</p>
+<p><b>Hints:</b> “Read their callings first.” “Pin the first and the last.” “The thief and the scholar fell back to back.”</p>
+
+<h2>III. The Counting Coil: <span class="ans">D-E-V-O-U-R-E-R</span></h2>
+<p>The 24 scales carry glyphs. Start on the scale under the eye (scale 1) and step clockwise by 1, 1, 2, 3, 5, 8, 13, each step the sum of the two before. Wrap past the tail back to the head. This lands on scales 1, 2, 3, 5, 8, 13, 21 and 10 (counting from 1). Those glyphs read DEVOURER.</p>
+<p><b>Hints:</b> “Count scales, don’t measure.” “1, 1, 2, 3, 5, 8, 13.” “Keep counting past the tail. It never ends.”</p>
+
+<h2>IV. The Chapel of Liturgy</h2>
+<p>Players rebuild three prayers from glyph tiles, using the Lexicon and the rule that the deed comes last:</p>
+<ul>
+  <li>“The void devours all gods.” <span class="ans">NUL · ZARGUK · SHA</span></li>
+  <li>“Blood opens the eye.” <span class="ans">ISHKRA · AKH · GHUL</span></li>
+  <li>“The serpent counts every key.” <span class="ans">OUROTH · GHAZUK · KRENN</span></li>
+</ul>
+<p>The decoy tiles are VORZ, MUL, KRUL, DURN, SKETH and ZHAAL. Tap a filled slot to take its tile back.</p>
+<p><b>Hints:</b> “Find each word in the Lexicon.” “-ûk means all.” “The verb always goes last.”</p>
+
+<h2>V. The Ring at the End: <span class="ans">OUROBOROS</span></h2>
+<p>The ring is written backward. Read it counter-clockwise from the carved mouth: <i>I HAVE NO BEGINNING AND NO END. SPEAK THE NAME THE OUTSIDERS GAVE ME.</i> The outsiders’ name for the serpent is <b>Ouroboros</b>. If players type OUROTH or SERPENT, they get a nudge.</p>
+<p><b>Hints:</b> “It eats toward its tail.” “Read the glyphs right to left.” “Not its name in the Tongue. Ours.”</p>
+
+<h2>The Tongue: quick lexicon</h2>
+<p><b>nul</b> void · <b>ouroth</b> serpent · <b>zarg</b> god · <b>-ûk</b> all · <b>shâ</b> devours · <b>ghûl</b> opens · <b>krenn</b> counts · <b>akh</b> eye · <b>ishkra</b> blood · <b>vorz</b> stone · <b>mûl</b> mask · <b>krûl</b> the end · <b>dûrn</b> door / mouth · <b>ghaz</b> key / scale · <b>sketh</b> flesh · <b>zhaal</b> tongue.<br>
+Creed: <i>Nul zarg-ûk shâ. Ouroth shâ Ouroth.</i> (“The void devours all gods. The Serpent devours the Serpent.”)</p>
+</main>
+</body>
+</html>
+
+

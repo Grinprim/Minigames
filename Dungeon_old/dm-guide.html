@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thessaros DM Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1d1418; --faint: #6b5a55; --blood: #8e0f1c; }
+  body { margin: 0; background: #17111a; color: var(--ink); font: 500 1.1rem/1.55 'Cormorant Garamond', Georgia, serif; }
+  main { max-width: 820px; margin: 24px auto; padding: clamp(20px, 5vw, 48px); background: #f4f1ea; }
+  h1, h2 { font-family: 'Cinzel', serif; color: #4a1d6b; letter-spacing: .05em; line-height: 1.2; }
+  h1 { margin-top: 0; } h2 { font-size: 1.15rem; margin: 1.8rem 0 .4rem; }
+  .ans { font: 700 1.05rem 'Cinzel'; color: var(--blood); letter-spacing: .08em; }
+  code { background: #e6e0d4; padding: 0 .3em; }
+  @media print { body { background: #fff; } main { margin: 0; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Thessaros: DM Guide</h1>
+<p>Open <b>index.html</b> in a browser on a TV, laptop or phone. Players click <b>Descend</b>, which also starts the abyss music (press <b>M</b> to mute). The map is a spiral ramp sinking into the void. Click a room and the lantern walks there, then press Enter. Each room unlocks after the one before it. Five rooms give five keys. With all five keys the <b>Door at the End</b> opens on the map. Players turn each key in its lock, and the fifth lock turns last. Then the door breaks and the Abyssal Serpent forms in the Sanctum. The serpent never appears before that.</p>
+<p>Progress saves in that browser. For testing, open <code>index.html?dev</code>. A panel appears bottom-left with <i>All keys</i>, <i>All keys + door</i> (straight to the serpent), <i>Max trial</i> and <i>Reset all</i>.</p>
+
+<h2>The Hall of Glyphs (no key)</h2>
+<p>This room teaches the script and is always open. It has four tabs: the <b>Codex</b> (the alphabet), the <b>Lexicon</b> and the grammar rule, the <b>Slate</b> (type Common and see it in glyphs) and the <b>Trial</b> (name 10 glyphs against a timer, with 3 lives). Every chamber after it needs this room.</p>
+<p><b>How the script works:</b> each letter is a serpent with a head and 0–4 barbs. The Eye head marks vowels (A=0 barbs … U=4). Consonants go through hook-left (B C D F G), hook-right (H J K L M), fangs (N P Q R S) and crown (T V W X Y), and Z has the bar. <b>Grammar:</b> the one acting comes first, then what it acts on, and the deed (the verb) comes last. The creed <i>Ouroth shâ Ouroth</i> is the only exception, because it is a circle.</p>
+
+<h2>I. The Speaking Wall: <span class="ans">NUL</span></h2>
+<p>The inscription is shifted seven letters along the alphabet. The scratched hint reads, in glyphs, IT HAS SWALLOWED SEVEN. Turn the dial seven steps (or drag it) and the wall reads <i>BEFORE THE GODS THERE WAS ONLY THE VOID. SPEAK ITS NAME IN THE TONGUE OF THE COIL.</i> The Lexicon gives the void as <b>nul</b>. If players type VOID or ABYSS, the wall nudges them toward the Tongue.</p>
+<p><b>Hints:</b> “The alphabet is a serpent too: it eats its own tail.” “Read the scratch under the dial.” “The wall wants the Tongue’s word, not ours.”</p>
+
+<h2>II. The Gallery of the Gaze: <span class="ans">V-E-N-O-M</span></h2>
+<p>The statues are named only in glyphs: VAEL the MASON, ESK the PRIESTESS, NYRA the THIEF, ORRIN the SCHOLAR, MOUR the GUARD. From the clues: the mason fell first and the guard last. The thief and the scholar fell back to back, and the priestess fell before the scholar. So the order is Vael, Esk, Nyra, Orrin, Mour. Players tap the statues in that order, and the initials burn as VENOM.</p>
+<p><b>Hints:</b> “Read their callings first.” “Pin the first and the last.” “The thief and the scholar fell back to back.”</p>
+
+<h2>III. The Counting Coil: <span class="ans">D-E-V-O-U-R-E-R</span></h2>
+<p>The 24 scales carry glyphs. Start on the scale under the eye (scale 1) and step clockwise by 1, 1, 2, 3, 5, 8, 13, each step the sum of the two before. Wrap past the tail back to the head. This lands on scales 1, 2, 3, 5, 8, 13, 21 and 10 (counting from 1). Those glyphs read DEVOURER.</p>
+<p><b>Hints:</b> “Count scales, don’t measure.” “1, 1, 2, 3, 5, 8, 13.” “Keep counting past the tail. It never ends.”</p>
+
+<h2>IV. The Chapel of Liturgy</h2>
+<p>Players rebuild three prayers from glyph tiles, using the Lexicon and the rule that the deed comes last:</p>
+<ul>
+  <li>“The void devours all gods.” <span class="ans">NUL · ZARGUK · SHA</span></li>
+  <li>“Blood opens the eye.” <span class="ans">ISHKRA · AKH · GHUL</span></li>
+  <li>“The serpent counts every key.” <span class="ans">OUROTH · GHAZUK · KRENN</span></li>
+</ul>
+<p>The decoy tiles are VORZ, MUL, KRUL, DURN, SKETH and ZHAAL. Tap a filled slot to take its tile back.</p>
+<p><b>Hints:</b> “Find each word in the Lexicon.” “-ûk means all.” “The verb always goes last.”</p>
+
+<h2>V. The Ring at the End: <span class="ans">OUROBOROS</span></h2>
+<p>The ring is written backward. Read it counter-clockwise from the carved mouth: <i>I HAVE NO BEGINNING AND NO END. SPEAK THE NAME THE OUTSIDERS GAVE ME.</i> The outsiders’ name for the serpent is <b>Ouroboros</b>. If players type OUROTH or SERPENT, they get a nudge.</p>
+<p><b>Hints:</b> “It eats toward its tail.” “Read the glyphs right to left.” “Not its name in the Tongue. Ours.”</p>
+
+<h2>The Tongue: quick lexicon</h2>
+<p><b>nul</b> void · <b>ouroth</b> serpent · <b>zarg</b> god · <b>-ûk</b> all · <b>shâ</b> devours · <b>ghûl</b> opens · <b>krenn</b> counts · <b>akh</b> eye · <b>ishkra</b> blood · <b>vorz</b> stone · <b>mûl</b> mask · <b>krûl</b> the end · <b>dûrn</b> door / mouth · <b>ghaz</b> key / scale · <b>sketh</b> flesh · <b>zhaal</b> tongue.<br>
+Creed: <i>Nul zarg-ûk shâ. Ouroth shâ Ouroth.</i> (“The void devours all gods. The Serpent devours the Serpent.”)</p>
+</main>
+</body>
+</html>

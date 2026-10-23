@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thessaros Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1b1a17; --faint: #6b6459; --teal: #1d6f68; --brass: #8a6d34; }
+  body { margin: 0; background: #121314; color: var(--ink); font: 500 1.08rem/1.55 'Cormorant Garamond', Georgia, serif; }
+  main { max-width: 880px; margin: 24px auto; padding: clamp(20px, 5vw, 48px); background: #f3efe6; }
+  h1, h2, h3 { font-family: 'Cinzel', Georgia, serif; color: #2c3a38; letter-spacing: .04em; line-height: 1.2; }
+  h1 { margin-top: 0; } h2 { font-size: 1.2rem; margin: 2.2rem 0 .5rem; border-bottom: 1px solid #d6cfbf; padding-bottom: .3rem; } h3 { font-size: 1rem; margin: 1.4rem 0 .3rem; }
+  .ans { font: 700 1rem 'Cinzel', Georgia, serif; color: var(--teal); letter-spacing: .06em; }
+  .warn { background: #e8e0cf; padding: .6rem .9rem; border-left: 3px solid var(--brass); }
+  code { background: #e3dccd; padding: 0 .3em; font-size: .92em; }
+  table { border-collapse: collapse; width: 100%; margin: .6rem 0; font-size: .98rem; }
+  th, td { border: 1px solid #d6cfbf; padding: .3rem .5rem; text-align: left; vertical-align: top; }
+  th { font-family: 'Cinzel', Georgia, serif; font-size: .78rem; letter-spacing: .06em; background: #e8e1d2; }
+  ol li, ul li { margin-bottom: .25rem; }
+  i { color: #3d3a33; }
+  @media print { body { background: #fff; } main { margin: 0; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Thessaros: the Guide</h1>
+<p class="warn"><b>Spoilers.</b> This guide contains every solution, the language, and the ending. It is for whoever runs, tests or extends the game.</p>
+
+<h2>Running it</h2>
+<p>Open <code>index.html</code> in any current desktop or mobile browser. There is no build step and no server; the only network request is for two Google fonts, and the game falls back to Georgia without them. Progress is saved in that browser under the key <code>thessaros.v3</code>. To jump ahead while testing, open <code>index.html?dev</code>: a panel offers <i>Know the script</i>, <i>All five keys</i> (puts you before the Door with five unturned keys), <i>Door opened</i> and <i>Reset</i>.</p>
+<p>The previous version stored a campaign under <code>thessaros2</code>. Its puzzles no longer exist, so the new game never reads it: a player with an old save sees a one-line notice on the title screen and begins a fresh campaign. The old data is left untouched.</p>
+
+<h2>The story underneath</h2>
+<p>None of this is told outright. It is the history the inscriptions were written to agree with.</p>
+<ul>
+  <li><b>The deep.</b> Before the city, the plain had a chasm. Its people, later called the <i>Feeders</i>, carried their dead to the edge and gave them to it. They called it <i>nhaur</i>, the deep, and believed death was a destination, not an ending: everything falls towards it.</li>
+  <li><b>Ishvel.</b> A woman, Ishvel, went down into the chasm and came back. She was the first to write the Tongue. Her testament says the deep is neither stone nor nothing; an eye saw her; the deep has a name, <i>Nhaurith</i>, <i>she who is the deep</i>. The abyss is not where she lives. It is her.</li>
+  <li><b>The opening.</b> Generations later her Eye began to open. Whatever its gaze fell on ended: gods, names, rivers. The <i>Keepers</i> took power from the Feeders and built Thessaros as a lid. Seen from above the temple is a closed eye: the Door at the End is its pupil, the city its eyelid, and the five chambers sit along the lid like stitches.</li>
+  <li><b>The five keys</b> are five scales of her own body (<i>ghaz</i> means both key and scale), each holding one seal of the lid. They were hidden inside mechanisms that only a reader of the Tongue could operate, because the Keepers believed only a reader would understand what not to do.</li>
+  <li><b>The end of the city.</b> The Keepers came to believe the dead were not destroyed below but sleeping, safe only while she could not see them. So they masked the dead, sealed their eyes, broke their names, and lowered them. At the last, the whole city did this to itself. Thessaros was not abandoned. It went down.</li>
+  <li><b>The reader.</b> Ishvel's last line: <i>Nhaurith sees the one who reads.</i> Every word the player learns brings them closer to seeing her, and her to seeing them. The first words over the Threshold, unreadable at the start, were <i>Akh nhaur ven. Ka val.</i>: the eye of the deep is watching; do not go down.</li>
+  <li><b>Orvane</b>, an earlier explorer, left notes at the Threshold, in the Stacks and on the Keepers' Stair. Orvane learned to read, understood, turned back, and vanished.</li>
+</ul>
+
+<h2>The world and its gates</h2>
+<table>
+  <tr><th>Place</th><th>Reached from</th><th>Opens when</th></tr>
+  <tr><td>The Threshold</td><td>start</td><td>always</td></tr>
+  <tr><td>Hall of Letters</td><td>Threshold</td><td>always; its inner door opens when the alphabet is solved</td></tr>
+  <tr><td>Upper Ring</td><td>Hall of Letters</td><td>alphabet solved</td></tr>
+  <tr><td>I. Hall of Names (<i>Shemos</i>)</td><td>Upper Ring, left</td><td>always</td></tr>
+  <tr><td>II. Hall of Words (<i>Zhaalos</i>) + the Stacks</td><td>Upper Ring, right; Stacks through a crack</td><td>always</td></tr>
+  <tr><td>Middle Ring</td><td>Upper Ring gate</td><td>Keys I and II (each slackens one gate chain)</td></tr>
+  <tr><td>III. Engine of Sleep (<i>Murros</i>) + Cistern</td><td>Middle Ring, left</td><td>always</td></tr>
+  <tr><td>IV. Chapel of the Last Rite (<i>Valos</i>)</td><td>Middle Ring, right</td><td>always</td></tr>
+  <tr><td>Feeders' Shrine (optional)</td><td>Middle Ring, broken doorway</td><td>always</td></tr>
+  <tr><td>Lower Ring</td><td>Middle Ring bridge</td><td>Keys III and IV</td></tr>
+  <tr><td>V. Cell of Ishvel (<i>Akhos</i>)</td><td>Lower Ring</td><td>always</td></tr>
+  <tr><td>Keepers' Stair (optional shortcut)</td><td>Lower Ring relief ↔ Hall of Letters</td><td>pull the carved keeper's hands from its eyes</td></tr>
+  <tr><td>Door at the End</td><td>Lower Ring, last stair</td><td>always visitable; opening needs all five keys</td></tr>
+  <tr><td>Below</td><td>the open Door</td><td>the Door opened</td></tr>
+</table>
+<p>The map (M) lets the player travel back to any place already visited. Unexplored passages appear as “?”. After the player sees the ceiling plan in Chamber V, the map draws itself as a closed eye.</p>
+<p><b>The temple responds.</b> Black growths with turquoise points spread as keys are taken. After the third key, the hooded statue in the Upper Ring has turned to face the shaft. Lamps burn without oil. The cistern drains when the Engine is set. After Chamber V, new letters have appeared on Ishvel's wall.</p>
+
+<h2>The Tongue</h2>
+<h3>The script</h3>
+<p>Each letter is a small serpent with a head and 0–4 barbs across its body. The head names the row; the barbs count along it; the rows are the player's own alphabet in order.</p>
+<table>
+  <tr><th>Head</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+  <tr><td>Eye (the vowels)</td><td>A</td><td>E</td><td>I</td><td>O</td><td>U</td></tr>
+  <tr><td>Hook, left</td><td>B</td><td>C</td><td>D</td><td>F</td><td>G</td></tr>
+  <tr><td>Hook, right</td><td>H</td><td>J</td><td>K</td><td>L</td><td>M</td></tr>
+  <tr><td>Fangs</td><td>N</td><td>P</td><td>Q</td><td>R</td><td>S</td></tr>
+  <tr><td>Crown</td><td>T</td><td>V</td><td>W</td><td>X</td><td>Y</td></tr>
+  <tr><td>Bar</td><td>Z</td><td></td><td></td><td></td><td></td></tr>
+</table>
+<p>A small diamond ends a sentence. Every vowel wears an eye.</p>
+
+<h3>Grammar</h3>
+<ul>
+  <li><b>The deed comes last.</b> Doer, then what is acted on, then the verb: <i>Nhaur zarguk sha</i>, the deep devours every god. A place a thing goes to stands before the verb: <i>Valaruk nhaur val</i>, the dead go down into the deep.</li>
+  <li><b>The thing, then its owner.</b> <i>Akh nhaur</i>, the eye of the deep. <i>Durn krul</i>, the door of the end.</li>
+  <li><b>No word for “is”.</b> <i>Nhaur krul</i>: the deep is the end.</li>
+  <li><b>KA, not,</b> stands before the deed it refuses. On its own it commands: <i>Ka val</i>, do not go down. With no deed it ends the clause: <i>Nhaur vorz ka</i>, the deep is not stone.</li>
+  <li><b>Suffixes:</b> <b>-UK</b> all, many; <b>-AR</b> one who does it (or works with it); <b>-OS</b> place of; <b>-ITH</b> she who is. They stack: <i>thess·ar·uk</i>, keep-one-who-all, the keepers; <i>thess·ar·os</i>, the place of the keepers.</li>
+</ul>
+
+<h3>Lexicon</h3>
+<table>
+  <tr><th>Word</th><th>Meaning</th><th>Where its meaning is learned</th></tr>
+  <tr><td>nhaur</td><td>the deep, below; later: her name cut short</td><td>clue: the grate. Confirmed: Chamber II. Second sense: Chamber V testament</td></tr>
+  <tr><td>akh</td><td>eye</td><td>mural; confirmed I</td></tr>
+  <tr><td>durn</td><td>door; later also lid, eyelid</td><td>lintels; confirmed I; second sense: ceiling plan in V</td></tr>
+  <tr><td>ghaz</td><td>key; also scale</td><td>key tag; confirmed I; second sense: cistern mosaic</td></tr>
+  <tr><td>ouroth</td><td>serpent, coil</td><td>serpent statue, mural; confirmed I</td></tr>
+  <tr><td>vorz</td><td>stone</td><td>mason's block; confirmed I</td></tr>
+  <tr><td>lum</td><td>lamp, light</td><td>lamp niches; confirmed I</td></tr>
+  <tr><td>shem</td><td>name</td><td>confirmed I</td></tr>
+  <tr><td>zhaal</td><td>word, speech, the Tongue</td><td>title of the scribes' wall; confirmed with the alphabet</td></tr>
+  <tr><td>val</td><td>go down, descend; of the dead, to die</td><td>II</td></tr>
+  <tr><td>ghul</td><td>open</td><td>II</td></tr>
+  <tr><td>thess</td><td>keep shut, bind</td><td>II</td></tr>
+  <tr><td>sha</td><td>devour, consume, end</td><td>II</td></tr>
+  <tr><td>zarg</td><td>god</td><td>II</td></tr>
+  <tr><td>krul</td><td>the end, the last</td><td>II</td></tr>
+  <tr><td>Ishvel</td><td>a woman's name</td><td>II, V</td></tr>
+  <tr><td>ven</td><td>see, look, watch</td><td>clue: chapel relief; confirmed III</td></tr>
+  <tr><td>murr</td><td>sleep</td><td>III</td></tr>
+  <tr><td>rha</td><td>wake, stir</td><td>clue: cistern tablet; confirmed III</td></tr>
+  <tr><td>krenn</td><td>count</td><td>clue: cistern tablet; confirmed V</td></tr>
+  <tr><td>sketh</td><td>body, the dead body</td><td>IV</td></tr>
+  <tr><td>orr</td><td>pour, wash</td><td>IV</td></tr>
+  <tr><td>mul</td><td>mask</td><td>clue: Feeders' Shrine; confirmed IV</td></tr>
+  <tr><td>dal</td><td>give, place</td><td>clue: Feeders' altar; confirmed IV</td></tr>
+  <tr><td>krak</td><td>break</td><td>IV</td></tr>
+  <tr><td>khol</td><td>bell</td><td>IV</td></tr>
+  <tr><td>zha</td><td>speak, sound</td><td>IV</td></tr>
+  <tr><td>ka</td><td>not</td><td>clue + rule: chapel relief; confirmed IV</td></tr>
+  <tr><td>nul</td><td>nothing, the void</td><td>V</td></tr>
+</table>
+<p>Derived words in the temple: <i>thessar</i> keeper, <i>thessaruk</i> the keepers, <i>Thessaros</i> place of the keepers, <i>valaruk</i> the dead, <i>valos</i> place of going down, <i>zhaalar</i> reader, <i>zhaalos</i> place of words, <i>zhaalith</i> she who speaks (Ishvel's title), <i>krulith</i> she who is the end (the Feeders' name for her), <i>Nhaurith</i> she who is the deep, <i>shemos</i> place of names, <i>murros</i> place of sleep, <i>akhos</i> place of the eye.</p>
+<p>Her true name, <b>Nhaurith</b>, is written in full exactly once, in Ishvel's testament. Every other inscription truncates it to <i>nhaur</i>, which the player reads as “the deep”, a place. The Feeders call her <i>Krulith</i>. Her title in the player's language, <i>the One Below</i>, is how a reader would render <i>nhaur</i> once they know it is a person.</p>
+
+<h3>Every inscription</h3>
+<table>
+  <tr><th>Where</th><th>Text</th><th>Reading</th></tr>
+  <tr><td>Threshold arch</td><td>THESSAROS</td><td>Thessaros: the place of the keepers.</td></tr>
+  <tr><td>Threshold, small line</td><td>AKH NHAUR VEN . KA VAL .</td><td>The eye of the deep is watching. Do not go down.</td></tr>
+  <tr><td>Scribes' wall</td><td>ZHAAL</td><td>The Tongue.</td></tr>
+  <tr><td>Inner door, Hall of Letters</td><td>ZHAALAR DURN GHUL .</td><td>The one who reads opens the door (later: the lid).</td></tr>
+  <tr><td>Floor grate</td><td>NHAUR</td><td>The deep (later: her).</td></tr>
+  <tr><td>Key tag</td><td>GHAZ</td><td>Key.</td></tr>
+  <tr><td>Mural</td><td>OUROTH AKH THESS .</td><td>The serpent keeps the eye shut.</td></tr>
+  <tr><td>Child's slate</td><td>ISHVEL ZHAALITH .</td><td>Ishvel, she who speaks.</td></tr>
+  <tr><td>Upper Ring plinths and blocks</td><td>THESSAR · OUROTH · VORZ · LUM</td><td>Keeper · serpent · stone · lamp.</td></tr>
+  <tr><td>Upper Ring gate</td><td>THESSAROS DURN THESS .</td><td>Thessaros keeps the door (the lid) shut.</td></tr>
+  <tr><td>Doorway signs</td><td>SHEMOS · ZHAALOS · MURROS · VALOS · AKHOS</td><td>Place of names · of words · of sleep · of going down · of the eye.</td></tr>
+  <tr><td>Hall of Names, under the empty prism</td><td>SHEM NHAUR KA ZHA .</td><td>Do not speak the name of the deep.</td></tr>
+  <tr><td>Hall of Names lever</td><td>SHEM THESS .</td><td>The name holds.</td></tr>
+  <tr><td>The Chronicle stele</td><td>VALARUK NHAUR VAL . | ISHVEL NHAUR VAL . | AKH NHAUR GHUL . | NHAUR ZARGUK SHA . | THESSARUK DURN THESS . | DURN KRUL GHUL .</td><td>The dead go down into the deep. Ishvel went down into the deep. The eye of the deep opened. The deep devoured every god. The keepers shut the door. At the end, the door opens.</td></tr>
+  <tr><td>Forged fragment</td><td>VALARUK KRULITH DAL . | KRULITH VALARUK VEN .</td><td>We give the dead to she who is the end. She who is the end sees the dead.</td></tr>
+  <tr><td>The Stacks</td><td>ZARGUK NHAUR VAL . NHAUR KRUL .</td><td>All the gods go down into the deep. The deep is the end.</td></tr>
+  <tr><td>Middle Ring balustrade</td><td>NHAUR KA VEN .</td><td>Do not look into the deep.</td></tr>
+  <tr><td>Engine table</td><td>OUROTHUK AKH VEN . NHAUR MURR .</td><td>When the serpents look upon the eye, the deep sleeps.</td></tr>
+  <tr><td>Cistern tablet</td><td>NHAUR RHA . THESSARUK KRENN .</td><td>The deep stirs. The keepers count.</td></tr>
+  <tr><td>Cistern mosaic</td><td>GHAZUK DURN THESS .</td><td>The keys (scales) hold the door (lid) shut.</td></tr>
+  <tr><td>Chapel bier</td><td>SHEM KRAK . SKETH ORR . AKHUK THESS . MUL DAL . KHOL ZHA . SKETH NHAUR VAL .</td><td>Break the name. Wash the body. Shut the eyes. Give the mask. Let the bell speak. The body goes down into the deep.</td></tr>
+  <tr><td>Chapel relief</td><td>THESSAR KA VEN .</td><td>The keeper does not look.</td></tr>
+  <tr><td>Under the bier</td><td>THESSAROS NHAUR VAL . VALARUK KA SHA . VALARUK MURR .</td><td>Thessaros has gone down. The dead are not devoured. The dead are sleeping.</td></tr>
+  <tr><td>Feeders' altar</td><td>VALARUK KRULITH DAL . with KA forced in</td><td>We give the dead to her → Do not give the dead to her.</td></tr>
+  <tr><td>Lower Ring</td><td>DURN KRUL</td><td>The door of the end.</td></tr>
+  <tr><td>Ishvel's testament</td><td>ISHVEL NHAUR VAL . | NHAUR VORZ KA . NHAUR NUL KA . | AKH ISHVEL VEN . | SHEM NHAURITH . | THESSAROS DURN AKH NHAURITH . | NHAURITH ZHAALAR VEN .</td><td>Ishvel went down into the deep. The deep is not stone. The deep is not nothing. An eye saw Ishvel. Her name: Nhaurith. Thessaros is the lid of Nhaurith's eye. Nhaurith sees the one who reads.</td></tr>
+  <tr><td>Keepers' plate · black stone · seat</td><td>AKH NHAUR NUL DAL . · NUL · ZHAALAR</td><td>Give the eye of the deep to nothing. · Nothing. · The reader.</td></tr>
+  <tr><td>After Chamber V</td><td>NHAURITH ZHAALARUK KRENN .</td><td>Nhaurith counts the readers.</td></tr>
+  <tr><td>Door lintel · wheel stop</td><td>DURN AKH NHAURITH . · THESSAROS KA GHUL .</td><td>The lid of Nhaurith's eye. · Thessaros does not open.</td></tr>
+</table>
+
+<h2>Solutions</h2>
+<h3>The first reading (Threshold) <span class="ans">THESSAROS</span></h3>
+<p>The surveyor's marker gives the name; Orvane's note points out that signs 4, 5 and 9 repeat. Writing a sound under a sign fills every copy of it. Teaches T H E S A R O.</p>
+
+<h3>The scribes' wall (Hall of Letters)</h3>
+<p>The wall is the table above. The player fills unknown signs by selecting one and choosing a letter. Wrong letters simply refuse. Completing any <b>two</b> rows (for example I and U on the Eye row, plus N P Q on the Fang row) shows the system and fills in the rest. The inner door's slab then sinks.</p>
+<p><i>Hints:</i> the top row all wear the Eye, and A, E, O are among them; the last row has a single sign, like the last letter of an alphabet; the rows run in alphabetical order.</p>
+
+<h3>I. The Hall of Names</h3>
+<p>Turn each prism to the name of the thing beneath it, then pull the lever. The lever reports how many are right without saying which.</p>
+<p class="ans">stone VORZ · lamp LUM · key GHAZ · door DURN · serpent OUROTH · eye AKH</p>
+<p>Each word is carved elsewhere beside the thing it names: <i>lum</i> by every lamp niche, <i>vorz</i> on unused blocks, <i>ouroth</i> on the serpent statue, <i>ghaz</i> on the scribe's key tag, <i>durn</i> over doors. <i>Akh</i> follows by elimination from the mural (<i>ouroth akh thess</i> under a serpent and an eye). Optional: lift the seventh prism (<i>nhaur</i>) to find <i>shem nhaur ka zha</i>.</p>
+
+<h3>II. The Hall of Words</h3>
+<p>Find six fragments: three lying on the floor; one under the rubble (drag the blocks aside); one on the high ledge (climb the toppled statue); one in a sealed jar in the Stacks, through the crack in the right wall. A seventh, warmer piece also lies on the floor. It is from the Feeders' stele and fits the middle-left place just as well.</p>
+<p>Each piece only seats where its border and breaks match. With the forged piece in the middle-left, the stele stays dead: the words across the middle seam do not form words (<i>…kru|ur ghul</i>). The right middle-left piece is the one from the rubble. Reward: eight words and four rules.</p>
+
+<h3>III. The Engine of Sleep</h3>
+<p>Three rings with 8, 6 and 4 marks start at positions 3, 1 and 2. The goal is all three serpent heads at the closed eye (position 0). The right crank's handle lies in the Cistern water.</p>
+<ul><li>Left crank: outer +1, middle −1.</li><li>Right crank: middle +1, inner +1.</li></ul>
+<p>Cranks only turn forwards. The insight is that a full revolution of one ring returns it to the same place but drags the ring it is geared to. Shortest solution: <span class="ans">left ×5, right ×10</span> (also left ×13 and right ×6, or left ×21 and right ×2). Solving it drains the cistern and uncovers the mosaic.</p>
+
+<h3>IV. The Chapel of the Last Rite</h3>
+<p>Read the litany on the bier, verb last in every sentence. Each station performs one deed.</p>
+<ol><li>Table: break the name-tablet (<i>shem krak</i>)</li><li>Basin: pour water over the body (<i>sketh orr</i>)</li><li>Wax: seal the eyes (<i>akhuk thess</i>)</li><li>Mask: lay it over the face (<i>mul dal</i>)</li><li>Bell: ring it (<i>khol zha</i>)</li><li>Winch: lower the bier <b>with your eyes turned away</b> (<i>sketh nhaur val</i> + the relief <i>thessar ka ven</i>)</li></ol>
+<p>Out of order, the rite resets. Covering open eyes with the mask is refused outright. Watching the bier go down shows two turquoise eyes far below and resets the rite. On success the bier comes back up empty except for the key, and reveals the line beneath it.</p>
+
+<h3>V. The Cell of Ishvel</h3>
+<p>A 7×7 floor of lenses (each bearing a glyph) and eight turnable mirrors over a crack of turquoise light. The light spells whatever it passes through. The Keepers' setting (mirrors 1–4 as / / \ /) spells <i>nhaur</i> into the black stone: the containment. The goal is to spell her whole name, written once in the testament, and end on the reader's seat.</p>
+<p class="ans">N → H → A → U → R, then up through I, right through T, up, left through H onto the SEAT</p>
+<p>From the starting state, turn mirrors 1, 2, 3, 4, 5, 7 and 8 once each, leaving mirror 6 (left edge). A near miss spells <i>nhaurith</i> and runs on through S into rock. Reading the testament teaches <b>-ith</b> and reveals that <i>nhaur</i> was her name all along; the ceiling plan teaches that <i>durn</i> is also the lid of an eye.</p>
+
+<h3>The Door at the End</h3>
+<ol>
+  <li><b>Locks</b>, in any order. I: turn the prism to <i>shem</i> (the word on the bone key), then insert. II: slide both stone halves aside, insert. III: insert, then six half-turns (three full turns, one per spiral groove). IV: insert, then hold the lever down for about 2.5 seconds; releasing early lets it spring back. The “Press once instead of holding” setting removes the need to hold. V: insert, then turn the glass key until it lies along the slanting crack of light (one turn).</li>
+  <li><b>Plates</b> lie one over another and lift off top first: <span class="ans">ZHAAL, VAL, SHEM, AKH, MURR</span> (each is marked by its word). A pinned plate names the one on top of it.</li>
+  <li><b>Wheel</b>: set the word at the notch to <span class="ans">GHUL</span> (open) and throw the lever. Every other word has its own failure: <i>thess</i> seals it tighter, <i>ven</i> shows a line of light, <i>murr</i>, <i>sha</i> and <i>val</i> each do something unsettling.</li>
+  <li><b>Activation</b>: the locks answer in turn, the rock shakes, the seam shines, and the lid lifts. The first viewing cannot be skipped. Afterwards the door can be replayed with a Skip button.</li>
+</ol>
+
+<h3>Below: the reveal</h3>
+<p>About 38 seconds before any words: darkness (0–4.5 s); faint shapes and turquoise points (4.5–10); two eyes, her face faintly lit (10–16.5); the eyes go out and the screen is fully dark (16.5–19.5); her head and coils emerge (19.5–27); the coils wind into a spiral as the head is drawn aside (27–34); the Eye opens (31–36), a riser builds, and at 36.4 the pupil snaps to a slit as she lunges at the viewer (flash, zoom, shake, a screaming stinger). From 37.5 dozens of small eyes open along her coils. Then four lines, one at a time, glossed only as far as the player can read them, and her name. After the first viewing a Skip button appears; Settings offers to watch it again.</p>
+<p>The door needs no last click: once it has opened, the player is pulled down into the reveal. The Eye is live. It follows the pointer (the coil eyes each look at it separately), blinks on its own, and wanders when the pointer is still or leaves the window. Its pupil narrows as the pointer comes near or moves fast. Her heartbeat starts in the darkness at 16.5 s and speeds up the closer the pointer gets. Clicking or tapping makes her flinch and hiss; three quick clicks and she lunges again. <b>Easter egg:</b> tap inside the great Eye ten times (the count resets after 6 seconds without a tap; her veins redden with each one) and she eats you (about 10 s). The Eye slams shut and the dark goes silent. Her eyes ignite one by one, then her face appears, seen head-on: scaled hide, ragged mane, angry brows. Her forked tongue flicks twice. She rears back on her coiled neck, rattling, jaws gaping to show fangs and rings of teeth down her throat. Then she strikes. The view goes inside her mouth as the jaws close, there is a red flash, she chews once, and you slide down her throat. Then: “Nhaurith does not like to be touched. She lets you go. This time.” The scene comes back, and the journal gains the lore entry <i>Inside</i>. The score (sub drone, growl, a choir of formants, trembling strings, an endlessly falling tone, whispers) swells with that tension. Reduced motion turns off blinking, shake and the lunge zoom.</p>
+
+<h2>Hints</h2>
+<p>The hint button (H) gives three tiers for whatever the player most needs right now. It knows the current room: inside a chamber it helps with that chamber, and outside one it points to the next step. The last tier states the answer.</p>
+</main>
+</body>
+</html>

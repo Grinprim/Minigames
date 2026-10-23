@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thessaros</title>
+<meta name="description" content="An atmospheric exploration and decipherment game. Learn a dead tongue, open five chambers, and meet the One Below.">
+<meta name="theme-color" content="#050506">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="temple.css">
+</head>
+<body>
+<svg id="defs" width="0" height="0" aria-hidden="true" focusable="false"></svg>
+
+<main id="stage" aria-label="The current place. Tab to move between things you can examine."></main>
+<button type="button" id="panL" class="pan" aria-label="Look left" hidden>‹</button>
+<button type="button" id="panR" class="pan" aria-label="Look right" hidden>›</button>
+
+<header id="hud"><span id="where"></span><div class="btns"></div></header>
+<nav id="keyring" aria-label="Keys"></nav>
+
+<aside id="panel" hidden aria-live="polite"></aside>
+<section id="exam" hidden role="dialog" aria-modal="true" aria-label="Close look"></section>
+<div id="sheet" hidden></div>
+<div id="notes" aria-live="polite"></div>
+<div id="gpop" hidden role="tooltip"></div>
+<div id="titlecard" aria-hidden="true"></div>
+<div id="award" hidden role="dialog" aria-modal="true" aria-label="A key"></div>
+
+<canvas id="abyss" hidden aria-label="The abyss below the Door at the End"></canvas>
+<div id="cinebar" hidden><button type="button" id="c-skip" hidden>Skip</button><button type="button" id="c-leave">Turn back</button></div>
+<div id="endtext" hidden aria-live="polite"></div>
+<div id="fade"></div>
+
+<div id="title">
+  <div class="tin">
+    <div class="creed" aria-hidden="true"></div>
+    <h1>Thessaros</h1>
+    <p class="sub">An abandoned temple-city. Its walls are covered in a script no one has read. It was built above something.</p>
+    <button type="button" id="t-go" class="pri">Begin the descent</button>
+    <button type="button" id="t-new" hidden>Begin a new expedition</button>
+    <p id="t-old" class="old" hidden>Notes from an earlier version of this expedition were found in this browser. Their puzzles no longer exist, so this descent begins fresh. The old notes are left untouched.</p>
+    <p class="small">All sound is made live in your browser. Headphones help. Mute and settings are at the top right.</p>
+  </div>
+</div>
+
+<script src="glyphs.js"></script>
+<script src="lang.js"></script>
+<script src="engine.js"></script>
+<script src="art.js"></script>
+<script src="world.js"></script>
+<script src="puzzles.js"></script>
+<script src="door.js"></script>
+<script src="nhaurith.js"></script>
+</body>
+</html>
